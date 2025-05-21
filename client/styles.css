@@ -1,0 +1,86 @@
+body,
+html {
+    height: 100%;
+    margin: 0;
+    background-color: #000;
+}
+.video-container {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 56px); /* Adjust for navbar */
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(-45deg, #6a82fb, #fc5c7d, #00c9ff, #92fe9d);
+    background-size: 400% 400%;
+    animation: gradientAnimation 20s ease infinite;
+}
+@keyframes gradientAnimation {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+#remoteVideo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 2; /* in front of overlay-controls */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease-in-out;
+}
+#localVideo {
+    position: absolute;
+    z-index: 3;
+    bottom: 20px;
+    left: 20px;
+    width: 200px;
+    height: 150px;
+    border: 2px solid #fff;
+    object-fit: cover;
+    border-radius: 10px;
+    background-color: #000;
+}
+.captions {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 1.25rem;
+    z-index: 2;
+    height: 56px;
+}
+.overlay-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+}
+.overlay-controls .form-control,
+.overlay-controls .form-select {
+    min-width: 200px;
+}
+.controls-container {
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    padding: 15px;
+}

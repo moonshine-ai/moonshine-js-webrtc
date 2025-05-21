@@ -4,8 +4,9 @@ const signalingServer = new WebSocket("wss://srv822706.hstgr.cloud:8080");
 const localVideo = document.getElementById("localVideo");
 const remoteVideo = document.getElementById("remoteVideo");
 const sessionKeyInput = document.getElementById("sessionKey");
+const languageInput = document.getElementById("languageSelect");
 const startSessionBtn = document.getElementById("startSession");
-const caption = document.getElementById("caption")
+const caption = document.getElementById("captions")
 
 const peerConnection = new RTCPeerConnection();
 
@@ -40,10 +41,14 @@ const transcriber = new Moonshine.StreamTranscriber(
 
 peerConnection.ontrack = ({ streams }) => {
     if (!isConnected) {
+        remoteVideo.style.visibility = 'visible'
+        remoteVideo.style.opacity = '1'
         remoteVideo.srcObject = streams[0]
 
         transcriber.attachStream(streams[0])
         transcriber.start()
+
+        console.log(remoteLanguage)
 
         isConnected = true
     }
@@ -55,17 +60,21 @@ peerConnection.onicecandidate = (event) => {
             JSON.stringify({
                 type: "ice",
                 key: sessionKeyInput.value,
+                lang: languageInput.value,
                 candidate: event.candidate,
             })
         );
     }
 };
 
+let remoteLanguage = "en"
+
 signalingServer.onmessage = async (event) => {
     const msg = JSON.parse(event.data);
     if (msg.key !== sessionKeyInput.value) return;
 
     if (msg.type === "offer") {
+        remoteLanguage = msg.lang
         await peerConnection.setRemoteDescription(
             new RTCSessionDescription(msg.offer)
         );
@@ -95,6 +104,7 @@ startSessionBtn.onclick = async () => {
             JSON.stringify({
                 type: "offer",
                 key: sessionKeyInput.value,
+                lang: languageInput.value,
                 offer,
             })
         );
