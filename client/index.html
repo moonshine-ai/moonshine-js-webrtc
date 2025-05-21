@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Moonshine WebRTC</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+            body {
+                font-family: Arial, Helvetica, sans-serif;
+            }
+            div {
+                margin-bottom: 2em;
+            }
+            .wrapper {
+                width: 720px;
+                margin: 0 auto;
+                display: flex;
+                flex-direction: column;
+            }
+            .container {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                width: 720px;
+                gap: 1rem; /* optional spacing */
+            }
+            .video-wrapper {
+                display: flex;
+                flex-direction: column;
+                align-items: center; /* optional: center video and text */
+            }
+            video {
+                width: 100%;
+                height: auto;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="wrapper">
+            <div>
+                <h1>MoonshineJS WebRTC Transcription</h1>
+                <p>Enter a session key to start or join a session.</p>
+                <p>
+                    Audio from the other participant is transcribed locally in
+                    your web browser.
+                </p>
+                <div>
+                    <label>Session Key: <input id="sessionKey" /></label>
+                    <button id="startSession">Start / Join</button>
+                </div>
+            </div>
+            <div class="container">
+                <div class="video-wrapper">
+                    <video id="localVideo" autoplay muted></video>
+                </div>
+                <div class="video-wrapper">
+                    <video id="remoteVideo" autoplay></video>
+                    <p id="caption"></p>
+                </div>
+            </div>
+            <script type="module" src="client.js"></script>
+        </div>
+    </body>
+</html>
