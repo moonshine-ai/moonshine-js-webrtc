@@ -11,6 +11,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@usefulsensors/moonshine-js": "file:../moonshine-js",
+    "transformers": "^3.1.0",
     "ws": "^8.18.2"
   },
   "devDependencies": {

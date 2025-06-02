@@ -15,45 +15,44 @@
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container-fluid">
                 <a class="navbar-brand">MoonshineJS + WebRTC</a>
-                <div class="d-flex">
-                </div>
+                <div class="d-flex"></div>
             </div>
         </nav>
-
-            <div class="video-container">
-                <video id="remoteVideo" autoplay playsinline></video>
-
-                <div class="controls-container">
-                    <!-- <div class="text-center">
-                        <h1>Title</h1>
-                        <p>Punchy explainer text!</p>
-                    </div> -->
-                    <div class="overlay-controls text-white">
-                        <div>
-                            <select class="form-select" id="languageSelect">
-                                <option value="" disabled selected>Choose your language</option>
-                                <option value="en">English</option>
-                                <option value="es">Spanish (Espa&#241;ol)</option>
-                            </select>
-                        </div>
-                        <div class="d-flex">
-                            <input
-                                id="sessionKey"
-                                type="text"
-                                class="form-control me-2"
-                                placeholder="Enter session key"
-                            />
-                            <button id="startSession" class="btn btn-primary">Start</button>
-                        </div>
+        <div class="video-container">
+            <video id="remoteVideo" autoplay playsinline></video>
+            <div class="controls-container">
+                <div class="text-center">
+                        <h1>Local Captioning for Video Calls</h1>
+                        <p>This demo uses MoonshineJS for real-time, on-device captioning and translation. All audio is processed locally on your device.</p>
+                        <hr />
+                        <p id="infoText">Choose your language, then begin a call by entering a shared session key.</p>
+                    </div>
+                <div class="overlay-controls text-white">
+                    <div>
+                        <select class="form-select" id="languageSelect">
+                            <option value="en" disabled selected>
+                                Choose your language
+                            </option>
+                            <option value="en">English</option>
+                            <option value="es">Spanish (Espa&#241;ol)</option>
+                        </select>
+                    </div>
+                    <div class="d-flex">
+                        <input
+                            id="sessionKey"
+                            type="text"
+                            class="form-control me-2"
+                            placeholder="Enter session key"
+                        />
+                        <button id="startSession" class="btn btn-primary">
+                            Start
+                        </button>
                     </div>
                 </div>
-
-                <div class="captions" id="captions">
-                </div>
-
-                <video id="localVideo" autoplay muted playsinline></video>
-
             </div>
-            <script type="module" src="client.js"></script>
+            <div class="captions" id="captions"></div>
+            <video id="localVideo" autoplay muted playsinline></video>
+        </div>
+        <script type="module" src="client.js"></script>
     </body>
 </html>
