@@ -1,32 +1,60 @@
 import * as Moonshine from "https://cdn.jsdelivr.net/npm/@usefulsensors/moonshine-js@latest/dist/moonshine.min.js";
 import { pipeline } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.2/dist/transformers.min.js";
 
-const localVideo = document.getElementById("localVideo");
-const remoteVideo = document.getElementById("remoteVideo");
-const sessionKeyInput = document.getElementById("sessionKey");
-const languageInput = document.getElementById("languageSelect");
-const startSessionBtn = document.getElementById("startSession");
-const caption = document.getElementById("captions");
-const infoText = document.getElementById("infoText");
-const langText = document.getElementById("langText");
-
-const peerConnection = new RTCPeerConnection();
-
-let remoteLanguage = undefined;
-
-function log(text) {
-    console.log(text);
-    infoText.innerHTML = text;
-}
+//
+// page elements
+//
+let localVideo, remoteVideo, sessionKeyInput, languageInput, startSessionBtn, caption, infoText, langText;
 
 //
-// connect to signaling server
+// webrtc connection and signaling server websocket
 //
+const rtcConfig = {
+    iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun.l.google.com:5349" },
+        { urls: "stun:stun1.l.google.com:3478" },
+        { urls: "stun:stun1.l.google.com:5349" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:5349" },
+        { urls: "stun:stun3.l.google.com:3478" },
+        { urls: "stun:stun3.l.google.com:5349" },
+        { urls: "stun:stun4.l.google.com:19302" },
+        { urls: "stun:stun4.l.google.com:5349" }
+        // TODO TURN service as alternative
+    ]
+};
+
+let signalingServer;
 const maxRetries = 5;
 const retryInterval = 2000; // ms
 const socketUrl = "wss://srv822706.hstgr.cloud:8080";
 let attempts = 0;
-let signalingServer;
+
+const peerConnection = new RTCPeerConnection(rtcConfig);
+let remoteLanguage = undefined;
+
+//
+// page elements
+//
+document.addEventListener("DOMContentLoaded", () => {
+    localVideo = document.getElementById("localVideo");
+    remoteVideo = document.getElementById("remoteVideo");
+    sessionKeyInput = document.getElementById("sessionKey");
+    languageInput = document.getElementById("languageSelect");
+    startSessionBtn = document.getElementById("startSession");
+    caption = document.getElementById("captions");
+    infoText = document.getElementById("infoText");
+    langText = document.getElementById("langText");
+})
+
+//
+// helper functions
+//
+function log(text) {
+    console.log(text);
+    infoText.innerHTML = text;
+}
 
 function disableControls(disabled) {
     languageInput.disabled = disabled;
@@ -43,8 +71,6 @@ function getRandomSessionKey(length = 16) {
     }
     return result;
 }
-
-sessionKeyInput.value = getRandomSessionKey();
 
 function connect() {
     disableControls(true);
@@ -67,7 +93,8 @@ function connect() {
             );
         };
 
-        signalingServer.onerror = () => {
+        signalingServer.onerror = (e) => {
+            console.log(e)
             log(`Attempt ${attempts} failed. Retrying...`);
             setTimeout(connect, retryInterval);
         };
@@ -84,17 +111,9 @@ function connect() {
     }
 }
 
-connect();
-
-navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
-    .then((stream) => {
-        stream
-            .getTracks()
-            .forEach((track) => peerConnection.addTrack(track, stream));
-        localVideo.srcObject = stream;
-    });
-
+//
+// transcriber/translator loading
+//
 let translator;
 let transcriber;
 
@@ -164,97 +183,113 @@ async function loadModels(moonshineModelName, translatorModelName) {
     ]);
 }
 
-var isConnecting = false;
+//
+// ui and signaling flow
+//
+document.addEventListener("DOMContentLoaded", () => {
+    sessionKeyInput.value = getRandomSessionKey();
+    connect();
 
-peerConnection.ontrack = ({ streams }) => {
-    if (!isConnecting) {
-        console.log(`peerConnection.ontrack ${streams}`);
-        console.log(remoteLanguage + " to " + languageInput.value);
-        isConnecting = true;
-
-        // TODO transcriber varies based on remoteLanguage
-        const translatorModelName =
-            remoteLanguage === languageInput.value
-                ? undefined
-                : `Xenova/opus-mt-${remoteLanguage}-${languageInput.value}`;
-        loadModels("model/tiny", translatorModelName).then(() => {
-            log("Starting call.");
-
-            remoteVideo.style.visibility = "visible";
-            remoteVideo.style.opacity = "1";
-            remoteVideo.srcObject = streams[0];
-
-            transcriber.attachStream(streams[0]);
-            transcriber.start();
-
-            langText.textContent = remoteLanguage + " → " + languageInput.value;
+    navigator.mediaDevices
+        .getUserMedia({ video: true, audio: true })
+        .then((stream) => {
+            stream
+                .getTracks()
+                .forEach((track) => peerConnection.addTrack(track, stream));
+            localVideo.srcObject = stream;
         });
-    }
-};
 
-peerConnection.onicecandidate = (event) => {
-    if (event.candidate) {
-        // log("Sending ICE candidate.")
-        signalingServer.send(
-            JSON.stringify({
-                type: "ice",
-                key: sessionKeyInput.value,
-                candidate: event.candidate,
-            })
-        );
-    }
-};
+    var isConnecting = false;
 
-signalingServer.onmessage = async (event) => {
-    const msg = JSON.parse(event.data);
-    if (msg.key !== sessionKeyInput.value) return;
+    peerConnection.ontrack = ({ streams }) => {
+        if (!isConnecting) {
+            console.log(remoteLanguage + " to " + languageInput.value);
+            isConnecting = true;
 
-    if (msg.type === "offer") {
-        log("Offer received.");
-        remoteLanguage = msg.lang;
-        await peerConnection.setRemoteDescription(
-            new RTCSessionDescription(msg.offer)
-        );
-        log("Sending answer.");
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        signalingServer.send(
-            JSON.stringify({
-                type: "answer",
-                key: msg.key,
-                lang: languageInput.value,
-                answer,
-            })
-        );
-    } else if (msg.type === "answer") {
-        log("Answer received.");
-        remoteLanguage = msg.lang;
-        await peerConnection.setRemoteDescription(
-            new RTCSessionDescription(msg.answer)
-        );
-    } else if (msg.type === "ice") {
-        // log("ICE candidate received.");
-        try {
-            await peerConnection.addIceCandidate(msg.candidate);
-        } catch (e) {
-            console.error("Error adding ice candidate", e);
+            // TODO transcriber varies based on remoteLanguage
+            const translatorModelName =
+                remoteLanguage === languageInput.value
+                    ? undefined
+                    : `Xenova/opus-mt-${remoteLanguage}-${languageInput.value}`;
+            loadModels("model/tiny", translatorModelName).then(() => {
+                log("Starting call.");
+
+                remoteVideo.style.visibility = "visible";
+                remoteVideo.style.opacity = "1";
+                remoteVideo.srcObject = streams[0];
+
+                transcriber.attachStream(streams[0]);
+                transcriber.start();
+
+                langText.textContent = remoteLanguage + " → " + languageInput.value;
+            });
         }
-    }
-};
+    };
 
-startSessionBtn.onclick = async () => {
-    if (peerConnection.signalingState === "stable") {
-        log("Broadcasting offer to begin session.");
-        disableControls(true);
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-        signalingServer.send(
-            JSON.stringify({
-                type: "offer",
-                key: sessionKeyInput.value,
-                lang: languageInput.value,
-                offer,
-            })
-        );
-    }
-};
+    peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+            // log("Sending ICE candidate.")
+            signalingServer.send(
+                JSON.stringify({
+                    type: "ice",
+                    key: sessionKeyInput.value,
+                    candidate: event.candidate,
+                })
+            );
+        }
+    };
+
+    signalingServer.onmessage = async (event) => {
+        const msg = JSON.parse(event.data);
+        if (msg.key !== sessionKeyInput.value) return;
+
+        if (msg.type === "offer") {
+            log("Offer received.");
+            remoteLanguage = msg.lang;
+            await peerConnection.setRemoteDescription(
+                new RTCSessionDescription(msg.offer)
+            );
+            log("Sending answer.");
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            signalingServer.send(
+                JSON.stringify({
+                    type: "answer",
+                    key: msg.key,
+                    lang: languageInput.value,
+                    answer,
+                })
+            );
+        } else if (msg.type === "answer") {
+            log("Answer received.");
+            remoteLanguage = msg.lang;
+            await peerConnection.setRemoteDescription(
+                new RTCSessionDescription(msg.answer)
+            );
+        } else if (msg.type === "ice") {
+            // log("ICE candidate received.");
+            try {
+                await peerConnection.addIceCandidate(msg.candidate);
+            } catch (e) {
+                console.error("Error adding ice candidate", e);
+            }
+        }
+    };
+
+    startSessionBtn.onclick = async () => {
+        if (peerConnection.signalingState === "stable") {
+            log("Broadcasting offer to begin session.");
+            disableControls(true);
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            signalingServer.send(
+                JSON.stringify({
+                    type: "offer",
+                    key: sessionKeyInput.value,
+                    lang: languageInput.value,
+                    offer,
+                })
+            );
+        }
+    };
+});
