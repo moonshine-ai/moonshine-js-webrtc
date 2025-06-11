@@ -4,7 +4,15 @@ import { pipeline } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers
 //
 // page elements
 //
-let localVideo, remoteVideo, sessionKeyInput, languageInput, startSessionBtn, caption, infoText, langText;
+let localVideo,
+    remoteVideo,
+    sessionKeyInput,
+    languageInput,
+    startSessionBtn,
+    lastCaption,
+    currentCaption,
+    infoText,
+    langText;
 
 //
 // webrtc connection and signaling server websocket
@@ -20,9 +28,9 @@ const rtcConfig = {
         { urls: "stun:stun3.l.google.com:3478" },
         { urls: "stun:stun3.l.google.com:5349" },
         { urls: "stun:stun4.l.google.com:19302" },
-        { urls: "stun:stun4.l.google.com:5349" }
+        { urls: "stun:stun4.l.google.com:5349" },
         // TODO TURN service as alternative
-    ]
+    ],
 };
 
 let signalingServer;
@@ -43,10 +51,11 @@ document.addEventListener("DOMContentLoaded", () => {
     sessionKeyInput = document.getElementById("sessionKey");
     languageInput = document.getElementById("languageSelect");
     startSessionBtn = document.getElementById("startSession");
-    caption = document.getElementById("captions");
+    lastCaption = document.getElementById("lastCaption");
+    currentCaption = document.getElementById("currentCaption");
     infoText = document.getElementById("infoText");
     langText = document.getElementById("langText");
-})
+});
 
 //
 // helper functions
@@ -72,6 +81,71 @@ function getRandomSessionKey(length = 16) {
     return result;
 }
 
+function transitionVideo(toWrapper) {
+    const first = localVideo.getBoundingClientRect();
+
+    toWrapper.appendChild(localVideo);
+    const last = localVideo.getBoundingClientRect();
+
+    const dx = first.left - last.left;
+    const dy = first.top - last.top;
+    const dw = first.width / last.width;
+    const dh = first.height / last.height;
+
+    localVideo.animate(
+        [
+            {
+                transform: `translate(${dx}px, ${dy}px) scale(${dw}, ${dh})`,
+            },
+            {
+                transform: "none",
+            },
+        ],
+        {
+            duration: 500,
+            easing: "ease",
+        }
+    );
+}
+
+function setVisibility(icon, visible) {
+    if (visible) {
+        document.getElementById(icon).style.display = 'inline-block';
+    }
+    else {
+        document.getElementById(icon).style.display = 'none';
+    }
+}
+
+function splitLine(text, min = 40, max = 60) {
+    const words = text.split(" ");
+    const lines = [];
+    let currentLine = "";
+
+    for (let word of words) {
+        const testLine = currentLine.length ? `${currentLine} ${word}` : word;
+
+        if (testLine.length <= max) {
+            currentLine = testLine;
+        } else {
+            if (currentLine.length >= min) {
+                lines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine = testLine;
+                lines.push(currentLine);
+                currentLine = "";
+            }
+        }
+    }
+
+    if (currentLine) {
+        lines.push(currentLine);
+    }
+
+    return lines;
+}
+
 function connect() {
     disableControls(true);
 
@@ -94,7 +168,7 @@ function connect() {
         };
 
         signalingServer.onerror = (e) => {
-            console.log(e)
+            console.log(e);
             log(`Attempt ${attempts} failed. Retrying...`);
             setTimeout(connect, retryInterval);
         };
@@ -116,6 +190,8 @@ function connect() {
 //
 let translator;
 let transcriber;
+let caption = "";
+let captions = [];
 
 function loadTranscriber(modelName) {
     let modelLoaded;
@@ -137,11 +213,25 @@ function loadTranscriber(modelName) {
                 if (text) {
                     if (translator) {
                         translator(text).then((result) => {
-                            caption.innerHTML = result[0].translation_text;
+                            caption = result[0].translation_text;
+                            currentCaption.innerHTML =
+                                splitLine(caption).join("<br>");
                         });
                     } else {
-                        caption.innerHTML = text;
+                        caption = text;
+                        currentCaption.innerHTML =
+                            splitLine(caption).join("<br>");
                     }
+                }
+            },
+            onTranscriptionCommitted(text) {
+                if (caption) {
+                    captions.push(caption);
+                    caption = "";
+                    lastCaption.innerHTML = splitLine(
+                        captions[captions.length - 1]
+                    ).join("<br>");
+                    currentCaption.innerHTML = "";
                 }
             },
         },
@@ -177,6 +267,8 @@ async function loadModels(moonshineModelName, translatorModelName) {
         ? ` and ${remoteLanguage} to ${languageInput.value} translator...`
         : "...";
     log("Loading transcriber model" + endText);
+    setVisibility("waitingIcon", false)
+    setVisibility("loadingIcon", true)
     return await Promise.all([
         loadTranscriber(moonshineModelName),
         loadTranslator(translatorModelName),
@@ -213,6 +305,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     : `Xenova/opus-mt-${remoteLanguage}-${languageInput.value}`;
             loadModels("model/tiny", translatorModelName).then(() => {
                 log("Starting call.");
+                setVisibility("waitingIcon", false)
+                setVisibility("loadingIcon", false)
+                transitionVideo(document.getElementById("localVideoWrapper"))
 
                 remoteVideo.style.visibility = "visible";
                 remoteVideo.style.opacity = "1";
@@ -221,7 +316,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 transcriber.attachStream(streams[0]);
                 transcriber.start();
 
-                langText.textContent = remoteLanguage + " → " + languageInput.value;
+                langText.textContent =
+                    remoteLanguage + " → " + languageInput.value;
             });
         }
     };
@@ -244,12 +340,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (msg.key !== sessionKeyInput.value) return;
 
         if (msg.type === "offer") {
-            log("Offer received.");
+            // log("Offer received.");
             remoteLanguage = msg.lang;
             await peerConnection.setRemoteDescription(
                 new RTCSessionDescription(msg.offer)
             );
-            log("Sending answer.");
+            // log("Sending answer.");
             const answer = await peerConnection.createAnswer();
             await peerConnection.setLocalDescription(answer);
             signalingServer.send(
@@ -261,7 +357,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 })
             );
         } else if (msg.type === "answer") {
-            log("Answer received.");
+            // log("Answer received.");
             remoteLanguage = msg.lang;
             await peerConnection.setRemoteDescription(
                 new RTCSessionDescription(msg.answer)
@@ -278,7 +374,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     startSessionBtn.onclick = async () => {
         if (peerConnection.signalingState === "stable") {
-            log("Broadcasting offer to begin session.");
+            log("Room created. Share the session key to start a call.");
+            setVisibility("waitingIcon", true)
             disableControls(true);
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);

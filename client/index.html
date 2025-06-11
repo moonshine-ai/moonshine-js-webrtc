@@ -24,54 +24,93 @@
         </nav>
         <div class="video-container">
             <video id="remoteVideo" autoplay playsinline></video>
-            <div class="controls-container">
-                <div class="text-center">
-                    <h1>Local Captioning for Video Calls</h1>
-                    <p>
-                        This demo uses MoonshineJS for real-time, on-device
-                        captioning and translation. All audio is processed
-                        locally on your device.
-                    </p>
-                    <hr />
-                    <p id="infoText">
-                        Choose your language, then begin a call by entering a
-                        shared session key.
-                    </p>
-                </div>
-                <div class="overlay-controls text-white">
-                    <div>
-                        <select class="form-select" id="languageSelect">
-                            <option value="en" selected>English</option>
-                            <option value="es">Spanish (Espa&#241;ol)</option>
-                        </select>
-                    </div>
-                    <div class="d-flex">
-                        <div
-                            class="position-relative me-2"
-                            style="max-width: 400px"
-                        >
-                            <input
-                                id="sessionKey"
-                                type="text"
-                                class="form-control me-2"
-                                placeholder="Enter session key"
-                            />
-                            <button
-                                id="sessionKeyCopy"
-                                class="btn btn-sm btn-primary position-absolute top-50 end-0 translate-middle-y me-2 bg-transparent border-0"
-                                onclick="copySessionKey()"
-                            >
-                                <i class="bi bi-clipboard text-dark"></i>
-                            </button>
+            <div class="container-md text-white">
+                <div class="row justify-content-between align-items-center">
+                    <div class="col-lg-6 controls-container">
+                        <div>
+                            <h1 class="display-4 splash-text">
+                                Private captioning and translation for video
+                                calls.
+                            </h1>
+                            <p class="lead">
+                                This demo uses MoonshineJS to transcribe and
+                                translate video calls in real-time. All audio
+                                processing happens locally on your device.
+                            </p>
                         </div>
-                        <button id="startSession" class="btn btn-primary">
-                            Start
-                        </button>
+                        <div class="row g-2">
+                            <div class="col-12 gy-4">
+                                <div>
+                                    <div
+                                        id="loadingIcon"
+                                        class="spinner-border spinner-border-sm icon"
+                                        role="status"
+                                    ></div>
+                                    <div
+                                        id="waitingIcon"
+                                        class="spinner-grow spinner-grow-sm icon"
+                                        role="status"
+                                    ></div>
+                                    <p id="infoText">
+                                        Choose your language, then begin a call
+                                        by entering a shared session key.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <select class="form-select" id="languageSelect">
+                                    <option value="en" selected>English</option>
+                                    <option value="es">
+                                        Spanish (Espa&#241;ol)
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <div class="position-relative">
+                                    <input
+                                        id="sessionKey"
+                                        type="text"
+                                        class="form-control me-2"
+                                        placeholder="Enter session key"
+                                    />
+                                    <button
+                                        id="sessionKeyCopy"
+                                        class="btn btn-sm btn-primary position-absolute top-50 end-0 translate-middle-y me-2 bg-transparent border-0"
+                                        onclick="copySessionKey()"
+                                    >
+                                        <i
+                                            class="bi bi-clipboard text-dark"
+                                        ></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <button
+                                    id="startSession"
+                                    class="btn btn-primary"
+                                >
+                                    Start
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <video
+                            id="localVideo"
+                            autoplay
+                            muted
+                            playsinline
+                        ></video>
                     </div>
                 </div>
             </div>
-            <div class="captions" id="captions"></div>
-            <video id="localVideo" autoplay muted playsinline></video>
+            <div class="captions" id="captions">
+                <span id="lastCaption" class="caption"></span> <br />
+                <span id="currentCaption" class="caption"></span>
+            </div>
+            <div id="localVideoWrapper">
+                <!--local video moves here when call starts-->
+            </div>
         </div>
         <script type="module" src="client.js"></script>
         <script>

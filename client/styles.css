@@ -12,19 +12,29 @@ html {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(-45deg, #6a82fb, #fc5c7d, #00c9ff, #92fe9d);
-    background-size: 400% 400%;
+    background: linear-gradient(
+        -32deg,
+        #6a82fb,
+        #fc5c7d,
+        #00c9ff,
+        #fc5c7d,
+        #6a82fb
+    );
+    background-size: 200% 200%;
     animation: gradientAnimation 20s ease infinite;
 }
 @keyframes gradientAnimation {
     0% {
         background-position: 0% 50%;
+        background-size: 200% 200%;
     }
     50% {
         background-position: 100% 50%;
+        background-size: 300% 300%;
     }
     100% {
         background-position: 0% 50%;
+        background-size: 200% 200%;
     }
 }
 #remoteVideo {
@@ -39,55 +49,55 @@ html {
     visibility: hidden;
     transition: opacity 0.5s ease-in-out;
 }
-#localVideo {
+#localVideoWrapper {
     position: absolute;
     z-index: 3;
     bottom: 20px;
     left: 20px;
     width: 200px;
     height: 150px;
+}
+#localVideo {
+    width: 100%;
     border: 2px solid #fff;
     object-fit: cover;
     border-radius: 10px;
     background-color: #000;
 }
+@media (max-width: 810px) {
+    #localVideoWrapper {
+        top: 20px;
+    }
+}
 #langText {
     color: #fff;
     text-transform: uppercase;
 }
+#infoText {
+    display: inline-block;
+}
+.icon {
+    display: none;
+    margin-right: 4px;
+}
 .captions {
     position: absolute;
-    bottom: 0;
+    bottom: 20px;
     width: 100%;
-    padding: 10px;
     text-align: center;
-    background: rgba(0, 0, 0, 0.5);
     color: #fff;
-    font-size: 1.25rem;
+    font-size: 2rem;
     z-index: 2;
-    height: 56px;
 }
-.overlay-controls {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
+.caption {
+    background-color: rgba(0, 0, 0, 0.6);
 }
-.overlay-controls .form-control,
+/* .overlay-controls .form-control,
 .overlay-controls .form-select {
     min-width: 200px;
-}
+} */
 .controls-container {
-    position: absolute;
-    top: 30%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1;
-    background: rgba(255, 255, 255, 0.6);
-    border-radius: 12px;
-    padding: 15px;
-    max-width: 600px;
+    padding: 16px;
 }
 .blurred-video {
     width: 100%;
