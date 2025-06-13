@@ -104,3 +104,10 @@ html {
     filter: blur(64px);
     transform: scale(1.5);
 }
+@keyframes copiedFlash {
+  0%   { background-color: #B7DDFB; }
+  100% { background-color: white; }
+}
+.copied {
+  animation: copiedFlash 0.8s ease;
+}

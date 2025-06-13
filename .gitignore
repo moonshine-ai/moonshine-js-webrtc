@@ -1,3 +1,5 @@
 node_modules
 publi.sh
 .DS_Store
+client/model
+.env
