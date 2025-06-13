@@ -12,6 +12,7 @@
   "description": "",
   "dependencies": {
     "@usefulsensors/moonshine-js": "file:../moonshine-js",
+    "express": "^5.1.0",
     "transformers": "^3.1.0",
     "ws": "^8.18.2"
   },
