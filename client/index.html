@@ -13,7 +13,7 @@
             rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
         />
-        <link href="/styles.css" rel="stylesheet" />
+        <link href="/styles.css?v=20250612" rel="stylesheet" />
     </head>
     <body>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -116,9 +116,16 @@
         <script>
             function copySessionKey() {
                 const input = document.getElementById("sessionKey");
-                input.select();
-                input.setSelectionRange(0, 99999); // for mobile
-                document.execCommand("copy");
+                navigator.clipboard
+                    .writeText(
+                        `${
+                            window.location.origin + window.location.pathname
+                        }?key=${input.value}`
+                    )
+                    .then(() => {
+                        input.classList.add("copied");
+                        setTimeout(() => input.classList.remove("copied"), 800);
+                    });
             }
         </script>
     </body>
