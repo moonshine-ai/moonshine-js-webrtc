@@ -40,10 +40,12 @@ router.ws('/', async (req, res) => {
     }
 
     const { key, type } = data;
+    console.log('Key:', key, 'Type:', type);
     if (!key) return;
 
     // Join session room
     if (!sessions.has(key)) {
+      console.log('Creating new session for key:', key);
       sessions.set(key, new Set());
     }
     sessions.get(key).add(ws);
