@@ -28,6 +28,7 @@ app.get('/', function(req, res, next){
 
 app.ws('/', function(ws, req) {
   console.log('WebSocket connection established');
+  var foo = bar; // This line is intentionally incorrect to cause an error.
   ws.on('message', (message) => {
     console.log('Received message:', message);
     let data;
