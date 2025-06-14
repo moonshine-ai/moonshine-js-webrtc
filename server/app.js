@@ -1,6 +1,8 @@
 import { WebSocketExpress } from 'websocket-express';
 var app = new WebSocketExpress();
 
+console.log("app", app);
+
 const port = process.env.PORT || 3000;
 
 // Holds the matchmaking ids used to connect clients.
