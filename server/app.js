@@ -7,17 +7,17 @@ const port = process.env.PORT || 3000;
 // Holds the matchmaking ids used to connect clients.
 const sessions = new Map();
 
-app.use(function (req, res, next) {
-  console.log('middleware');
-  req.testing = 'testing';
-  return next();
-});
+// app.use(function (req, res, next) {
+//   console.log('middleware');
+//   req.testing = 'testing';
+//   return next();
+// });
 
-app.get('/', function(req, res, next){
-  console.log('get route', req.testing);
-  res.send('Matchmaking server, websocket access only');
-  res.end();
-});
+// app.get('/', function(req, res, next){
+//   console.log('get route', req.testing);
+//   res.send('Matchmaking server, websocket access only');
+//   res.end();
+// });
 
 // app.ws('/', function(ws, req) {
 //   ws.on('message', function(msg) {
