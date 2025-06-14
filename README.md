@@ -8,3 +8,15 @@ This repo hosts a demo of peer-to-peer WebRTC video calling with live, on-device
 -   `server`: a simple WebRTC pairing server, allowing two clients to form a peer-to-peer connection by sharing a session key.
 
 The only data received by the server is a handshake for connecting clients. All audio processing happens locally in the user's browser!
+
+## Running it yourself
+
+The simplest way to get started is by using our existing server at `rtcserver.moonshine.ai`. Run the following command from the root of this repository and it should start a local webserver that you can navigate to in your browser:
+
+```bash
+npx vite
+```
+
+## Deploying a server
+
+The server component of the application is needed to 

@@ -36,11 +36,13 @@ const rtcConfig = {
 let signalingServer;
 const maxRetries = 5;
 const retryInterval = 2000; // ms
-const socketUrl = "wss://srv822706.hstgr.cloud:8080";
+// const socketUrl = "wss://srv822706.hstgr.cloud:8080";
+const socketUrl = "wss://matchmaker.moonshine.ai/:423";
 let attempts = 0;
 
 const peerConnection = new RTCPeerConnection(rtcConfig);
 let remoteLanguage = undefined;
+let isConnecting;
 
 //
 // page elements
@@ -58,6 +60,11 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 //
+// url params
+//
+const params = new URLSearchParams(window.location.search);
+
+//
 // helper functions
 //
 function log(text) {
@@ -67,8 +74,10 @@ function log(text) {
 
 function disableControls(disabled) {
     languageInput.disabled = disabled;
-    sessionKeyInput.disabled = disabled;
     startSessionBtn.disabled = disabled;
+
+    // session key entry is locked when provided via URL
+    if (!params.has("key")) sessionKeyInput.disabled = disabled;
 }
 
 function getRandomSessionKey(length = 16) {
@@ -110,10 +119,9 @@ function transitionVideo(toWrapper) {
 
 function setVisibility(icon, visible) {
     if (visible) {
-        document.getElementById(icon).style.display = 'inline-block';
-    }
-    else {
-        document.getElementById(icon).style.display = 'none';
+        document.getElementById(icon).style.display = "inline-block";
+    } else {
+        document.getElementById(icon).style.display = "none";
     }
 }
 
@@ -162,9 +170,13 @@ function connect() {
 
         signalingServer.onopen = () => {
             disableControls(false);
-            log(
-                "Choose your language, then begin a call by entering a shared session key."
-            );
+            if (params.has("key")) {
+                log("Choose your language, then press start to join.");
+            } else {
+                log(
+                    "Choose your language, then begin a call by entering a shared session key."
+                );
+            }
         };
 
         signalingServer.onerror = (e) => {
@@ -198,7 +210,11 @@ function loadTranscriber(modelName) {
     const promise = new Promise((resolve, reject) => {
         modelLoaded = resolve;
     });
-    // load transcriber for remote language
+    // spanish model is not on CDN - use different host
+    if (modelName.includes("es")) {
+        Moonshine.Settings.BASE_ASSET_PATH.MOONSHINE =
+            "https://webrtc.moonshinejs.com/";
+    }
     transcriber = new Moonshine.StreamTranscriber(
         modelName,
         {
@@ -267,47 +283,33 @@ async function loadModels(moonshineModelName, translatorModelName) {
         ? ` and ${remoteLanguage} to ${languageInput.value} translator...`
         : "...";
     log("Loading transcriber model" + endText);
-    setVisibility("waitingIcon", false)
-    setVisibility("loadingIcon", true)
+    setVisibility("waitingIcon", false);
+    setVisibility("loadingIcon", true);
     return await Promise.all([
         loadTranscriber(moonshineModelName),
         loadTranslator(translatorModelName),
     ]);
 }
 
-//
-// ui and signaling flow
-//
-document.addEventListener("DOMContentLoaded", () => {
-    sessionKeyInput.value = getRandomSessionKey();
+function init() {
     connect();
-
-    navigator.mediaDevices
-        .getUserMedia({ video: true, audio: true })
-        .then((stream) => {
-            stream
-                .getTracks()
-                .forEach((track) => peerConnection.addTrack(track, stream));
-            localVideo.srcObject = stream;
-        });
-
-    var isConnecting = false;
 
     peerConnection.ontrack = ({ streams }) => {
         if (!isConnecting) {
             console.log(remoteLanguage + " to " + languageInput.value);
             isConnecting = true;
 
-            // TODO transcriber varies based on remoteLanguage
             const translatorModelName =
                 remoteLanguage === languageInput.value
                     ? undefined
                     : `Xenova/opus-mt-${remoteLanguage}-${languageInput.value}`;
-            loadModels("model/tiny", translatorModelName).then(() => {
+            const moonshineModelName =
+                remoteLanguage === "en" ? "model/tiny" : "model/base-es";
+            loadModels(moonshineModelName, translatorModelName).then(() => {
                 log("Starting call.");
-                setVisibility("waitingIcon", false)
-                setVisibility("loadingIcon", false)
-                transitionVideo(document.getElementById("localVideoWrapper"))
+                setVisibility("waitingIcon", false);
+                setVisibility("loadingIcon", false);
+                transitionVideo(document.getElementById("localVideoWrapper"));
 
                 remoteVideo.style.visibility = "visible";
                 remoteVideo.style.opacity = "1";
@@ -375,7 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
     startSessionBtn.onclick = async () => {
         if (peerConnection.signalingState === "stable") {
             log("Room created. Share the session key to start a call.");
-            setVisibility("waitingIcon", true)
+            setVisibility("waitingIcon", true);
             disableControls(true);
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
@@ -389,4 +391,30 @@ document.addEventListener("DOMContentLoaded", () => {
             );
         }
     };
+}
+
+//
+// ui and signaling flow
+//
+document.addEventListener("DOMContentLoaded", () => {
+    init();
+
+    // check if url includes session key
+    if (params.has("key")) {
+        sessionKeyInput.value = params.get("key");
+        sessionKeyInput.disabled = true;
+    } else {
+        sessionKeyInput.value = getRandomSessionKey();
+    }
+
+    navigator.mediaDevices
+        .getUserMedia({ video: true, audio: true })
+        .then((stream) => {
+            stream
+                .getTracks()
+                .forEach((track) => peerConnection.addTrack(track, stream));
+            localVideo.srcObject = stream;
+        });
+
+    isConnecting = false;
 });
