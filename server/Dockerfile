@@ -5,13 +5,14 @@ WORKDIR /signaling
 COPY package*.json ./
 COPY index.html .
 COPY vite.config.js .
-COPY .wellknown .
+COPY app.js .
 RUN npm install
 
 COPY . .
 
-#EXPOSE 8080
+# EXPOSE 8080
 
-#CMD ["npm", "run", "start"]
+# CMD ["npm", "run", "start"]
+# CMD ["npx", "vite"]
 
-CMD ["npx", "vite"]
+CMD ["node", "app.js"]
