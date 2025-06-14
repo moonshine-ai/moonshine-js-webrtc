@@ -16,11 +16,49 @@ app.get('/', function(req, res, next){
   res.end();
 });
 
+// app.ws('/', function(ws, req) {
+//   ws.on('message', function(msg) {
+//     console.log(msg);
+//   });
+//   console.log('socket', req.testing);
+// });
+
 app.ws('/', function(ws, req) {
-  ws.on('message', function(msg) {
-    console.log(msg);
+  ws.on('message', (message) => {
+    let data;
+    try {
+      data = JSON.parse(message);
+      console.log(data)
+    } catch (e) {
+      console.error('Invalid JSON:', message);
+      return;
+    }
+
+    const { key, type } = data;
+    if (!key) return;
+
+    // Join session room
+    if (!sessions.has(key)) {
+      sessions.set(key, new Set());
+    }
+    sessions.get(key).add(ws);
+
+    // Relay the message to other peers in the same session
+    for (const client of sessions.get(key)) {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(data));
+      }
+    }
   });
-  console.log('socket', req.testing);
+
+  ws.on('close', () => {
+    for (const [key, clients] of sessions.entries()) {
+      clients.delete(ws);
+      if (clients.size === 0) {
+        sessions.delete(key);
+      }
+    }
+  });
 });
 
 app.listen(port, () => {
