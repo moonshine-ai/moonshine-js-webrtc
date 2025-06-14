@@ -24,7 +24,9 @@ app.get('/', function(req, res, next){
 // });
 
 app.ws('/', function(ws, req) {
+  console.log('WebSocket connection established');
   ws.on('message', (message) => {
+    console.log('Received message:', message);
     let data;
     try {
       data = JSON.parse(message);
@@ -52,6 +54,7 @@ app.ws('/', function(ws, req) {
   });
 
   ws.on('close', () => {
+    console.log('WebSocket connection closed');
     for (const [key, clients] of sessions.entries()) {
       clients.delete(ws);
       if (clients.size === 0) {
