@@ -1,6 +1,7 @@
 var express = require('express');
-var app = express();
+// var app = express();
 var expressWs = require('express-ws')(app);
+var app = expressWs.app;
 
 const port = process.env.PORT || 3000;
 
@@ -28,7 +29,6 @@ const sessions = new Map();
 
 app.ws('/', function(ws, req) {
   console.log('WebSocket connection established');
-  var foo = bar; // This line is intentionally incorrect to cause an error.
   ws.on('message', (message) => {
     console.log('Received message:', message);
     let data;
