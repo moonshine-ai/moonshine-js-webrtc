@@ -37,7 +37,7 @@ let signalingServer;
 const maxRetries = 5;
 const retryInterval = 2000; // ms
 // const socketUrl = "wss://srv822706.hstgr.cloud:8080";
-const socketUrl = "wss://matchmaker.moonshine.ai:423";
+const socketUrl = "wss://matchmaker.moonshine.ai/:423";
 let attempts = 0;
 
 const peerConnection = new RTCPeerConnection(rtcConfig);

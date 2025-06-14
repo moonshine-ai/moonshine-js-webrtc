@@ -4,6 +4,9 @@ var expressWs = require('express-ws')(app);
 
 const port = process.env.PORT || 3000;
 
+// Holds the matchmaking ids used to connect clients.
+const sessions = new Map();
+
 app.use(function (req, res, next) {
   console.log('middleware');
   req.testing = 'testing';
