@@ -50,7 +50,8 @@ router.ws('/', async (req, res) => {
 
     // Relay the message to other peers in the same session
     for (const client of sessions.get(key)) {
-      if (client !== ws && client.readyState === WebSocket.OPEN) {
+      if (client !== ws && client.readyState === 1) { // 1 means OPEN
+        console.log('Sending message to client:', client);
         client.send(JSON.stringify(data));
       }
     }
