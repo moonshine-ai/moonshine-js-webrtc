@@ -1,8 +1,7 @@
-import { WebSocketExpress } from 'websocket-express';
+import { WebSocketExpress, Router } from 'websocket-express';
+
 var app = new WebSocketExpress();
-
-console.log("app", app);
-
+const router = new Router();
 const port = process.env.PORT || 3000;
 
 // Holds the matchmaking ids used to connect clients.
@@ -27,8 +26,8 @@ const sessions = new Map();
 //   console.log('socket', req.testing);
 // });
 
-app.ws('/', function(ws, req) {
-  console.log('WebSocket connection established');
+router.ws('/', async (req, res) => {
+  const ws = await res.accept();
   ws.on('message', (message) => {
     console.log('Received message:', message);
     let data;
@@ -67,6 +66,8 @@ app.ws('/', function(ws, req) {
     }
   });
 });
+
+app.use(router);
 
 app.listen(port, () => {
   console.log(`Matchmaker app listening on port ${port}`);
