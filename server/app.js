@@ -1,7 +1,5 @@
-var express = require('express');
-// var app = express();
-var expressWs = require('express-ws')(app);
-var app = expressWs.app;
+import { WebSocketExpress } from 'websocket-express';
+var app = new WebSocketExpress();
 
 const port = process.env.PORT || 3000;
 
