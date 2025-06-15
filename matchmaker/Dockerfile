@@ -10,9 +10,4 @@ RUN npm install
 
 COPY . .
 
-# EXPOSE 8080
-
-# CMD ["npm", "run", "start"]
-# CMD ["npx", "vite"]
-
-CMD ["node", "app.js"]
+CMD ["node", "server.js"]
