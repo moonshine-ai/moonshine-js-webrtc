@@ -43,7 +43,7 @@ you can initiate a video call.
 For production we use a Google Cloud bucket, so deployment is as simple as
 
 ```bash
-gsutil cp client/* gs://webrtc.moonshine.ai/
+gsutil cp -a publicRead client/* gs://webrtc.moonshine.ai/
 ```
 
 ## Running the Matchmaker
