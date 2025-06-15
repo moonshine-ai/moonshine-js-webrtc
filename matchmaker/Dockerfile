@@ -1,11 +1,11 @@
 FROM node:20
 
-WORKDIR /signaling
+WORKDIR /signaling 
 
-COPY package*.json ./
-COPY server.js .
+COPY matchmaker/package*.json ./
+COPY matchmaker/server.js .
 RUN npm install
 
 COPY . .
 
-CMD ["node", "server.js"]
+CMD ["node", "matchmaker/server.js"]
