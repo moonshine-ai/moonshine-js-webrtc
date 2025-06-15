@@ -40,6 +40,12 @@ This exposes the contents of `client` as static files. If you navigate to
 [localhost:5173](http://localhost:5173/) you should see the starting page where
 you can initiate a video call.
 
+For production we use a Google Cloud bucket, so deployment is as simple as
+
+```bash
+gsutil cp client/* gs://webrtc.moonshine.ai/
+```
+
 ## Running the Matchmaker
 
 WebRTC is peer to peer, but for one client to connect to another based on a
