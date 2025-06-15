@@ -45,7 +45,7 @@
  * used to broadcast any kind of data between clients that share a key.
  * 
  * There should be an instance of this server running at
- * wss://matchmaker.moonshine.ai that you're welcome to use for testing, but we
+ * wss://matchmaker.moonshine.ai/ that you're welcome to use for testing, but we
  * recommend running your own instance for production use, since we make no
  * guarantees about supporting external apps using this server. 
  * 

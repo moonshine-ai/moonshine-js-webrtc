@@ -1,8 +1,27 @@
+/* Moonshine WebRTC Translator Client
+ * 
+ * (C) 2025 Moonshine AI, "Evan King" <evan@moonshine.ai>. Released under the
+ * Apache License, Version 2.0
+ *
+ * This client uses the Moonshine AI WebRTC library to establish a peer-to-peer
+ * connection between two clients, allowing them to share video and audio
+ * streams. It also uses the Moonshine AI StreamTranscriber to transcribe the
+ * audio stream in real-time and optionally translate it into another language
+ * using a Hugging Face translation model.
+ *
+ * The client connects to a signaling server at wss://matchmaker.moonshine.ai/
+ * to exchange session keys and WebRTC offers/answers with another client.
+ */
+
+// Pulls in the Moonshine JavaScript library to handle converting audio to text.
 import * as Moonshine from "https://cdn.jsdelivr.net/npm/@usefulsensors/moonshine-js@latest/dist/moonshine.min.js";
+
+// We use the Hugging Face Transformers library to run text to text translation
+// models.
 import { pipeline } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.2/dist/transformers.min.js";
 
 //
-// page elements
+// Page elements.
 //
 let localVideo,
     remoteVideo,
@@ -15,7 +34,7 @@ let localVideo,
     langText;
 
 //
-// webrtc connection and signaling server websocket
+// Webrtc connection and signaling server websocket.
 //
 const rtcConfig = {
     iceServers: [
@@ -36,8 +55,17 @@ const rtcConfig = {
 let signalingServer;
 const maxRetries = 5;
 const retryInterval = 2000; // ms
-const socketUrl = "wss://matchmaker.moonshine.ai/:423";
 let attempts = 0;
+
+// The URL of the matchmaking server that allows clients to send messages to all
+// other clients that share a session key. You're welcome to use this server at
+// wss://matchmaker.moonshine.ai/ for testing or protoyping, but for production
+// use you should run your own instance of this server, since we make no
+// guarantees about supporting external apps using this server. There are full
+// instructions on how to run your own instance in the matchmaker/server.js
+// file, and you can find that source code at
+// https://github.com/moonshineai/moonshine-js-webrtc/tree/main/matchmaker/.
+const socketUrl = "wss://matchmaker.moonshine.ai/";
 
 const peerConnection = new RTCPeerConnection(rtcConfig);
 let remoteLanguage = undefined;
@@ -79,6 +107,11 @@ function disableControls(disabled) {
     if (!params.has("key")) sessionKeyInput.disabled = disabled;
 }
 
+// Generates a random session key of the specified length (default 16
+// characters). This isn't intended to be cryptographically secure, but is
+// sufficient for generating unique session keys for the purpose of this
+// application. For more advanced use cases, see something like
+// https://jsr.io/@alikia/random-key.
 function getRandomSessionKey(length = 16) {
     const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
     let result = "";
@@ -209,7 +242,11 @@ function loadTranscriber(modelName) {
     const promise = new Promise((resolve, reject) => {
         modelLoaded = resolve;
     });
-    // spanish model is not on CDN - use different host
+
+    // Spanish model is not on CDN - use different host. This Spanish speech to
+    // text Moonshine model is available under a community license for
+    // researchers, developers, small businesses, and creators with less than
+    // $1M in annual revenue. See https://moonshine.ai/license for details.
     if (modelName.includes("es")) {
         Moonshine.Settings.BASE_ASSET_PATH.MOONSHINE =
             "https://webrtc.moonshinejs.com/";
