@@ -1,14 +1,14 @@
 # MoonshineJS + WebRTC
 
-From [Moonshine AI](https://moonshine.ai/), see a live demo at
+Video calling with real-time, on-device transcription and translation. From [Moonshine AI](https://moonshine.ai/), see a live demo at
 [webrtc.moonshine.ai](https://webrtc.moonshine.ai).
 
 <!-- toc -->
 
-- [Introduction](#introduction)
-- [Running the Client](#running-the-client)
-- [Running the Matchmaker](#running-the-matchmaker)
-- [License](#license)
+-   [Introduction](#introduction)
+-   [Running the Client](#running-the-client)
+-   [Running the Matchmaker](#running-the-matchmaker)
+-   [License](#license)
 
 <!-- tocstop -->
 
@@ -75,7 +75,7 @@ node server.js
 ```
 
 You should see a log message like `Matchmaker app listening on port 3000`. To
-test it is working, run this websocat (https://github.com/vi/websocat) command
+test it is working, run this [websocat](https://github.com/vi/websocat) command
 in another terminal:
 
 ```bash
@@ -85,10 +85,10 @@ echo '{"key":"foo", "payload":"bar"}' | websocat ws://localhost:3000/ -v
 ## License
 
 This code and the English-language Moonshine speech to text model it uses are
-released under the Apache License, Version 2.0, see LICENSE in this folder. 
+released under the Apache License, Version 2.0, see LICENSE in this folder.
 
 The Spanish-language speech to text model is released under the [Moonshine AI
-Community License][https://moonshine.ai/license] for researchers, developers,
+Community License](https://moonshine.ai/license) for researchers, developers,
 small businesses, and creators with less than $1M in annual revenue.
 
 We're grateful to the team behind [HuggingFace
@@ -96,4 +96,4 @@ TransformersJS](https://huggingface.co/docs/transformers.js/en/index) for the
 library that allows us to run the translation component of this demo, and the
 [Helsinki NLP group](https://huggingface.co/Helsinki-NLP) for their Spanish to
 English and English to Spanish test-to-text translation
-models.https://huggingface.co/Helsinki-NLP
+models.
