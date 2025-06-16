@@ -1,11 +1,11 @@
 /* Moonshine WebRTC Translator Client
  * 
  * (C) 2025 Moonshine AI, "Evan King" <evan@moonshine.ai>. Released under the
- * Apache License, Version 2.0
+ * MIT License
  *
  * This client uses the Moonshine AI WebRTC library to establish a peer-to-peer
  * connection between two clients, allowing them to share video and audio
- * streams. It also uses the Moonshine AI StreamTranscriber to transcribe the
+ * streams. It also uses the MoonshineJS Transcriber to transcribe the
  * audio stream in real-time and optionally translate it into another language
  * using a Hugging Face translation model.
  *
@@ -13,7 +13,7 @@
  * to exchange session keys and WebRTC offers/answers with another client.
  */
 
-// Pulls in the Moonshine JavaScript library to handle converting audio to text.
+// Pulls in the MoonshineJS library to handle converting audio to text.
 import * as Moonshine from "https://cdn.jsdelivr.net/npm/@usefulsensors/moonshine-js@latest/dist/moonshine.min.js";
 
 // We use the Hugging Face Transformers library to run text to text translation
@@ -34,7 +34,7 @@ let localVideo,
     langText;
 
 //
-// Webrtc connection and signaling server websocket.
+// WebRTC connection and signaling server WebSocket settings.
 //
 const rtcConfig = {
     iceServers: [
@@ -59,7 +59,7 @@ let attempts = 0;
 
 // The URL of the matchmaking server that allows clients to send messages to all
 // other clients that share a session key. You're welcome to use this server at
-// wss://matchmaker.moonshine.ai/ for testing or protoyping, but for production
+// wss://matchmaker.moonshine.ai/ for testing or prototyping, but for production
 // use you should run your own instance of this server, since we make no
 // guarantees about supporting external apps using this server. There are full
 // instructions on how to run your own instance in the matchmaker/server.js
@@ -234,7 +234,6 @@ function connect() {
 //
 let translator;
 let transcriber;
-let caption = "";
 let captions = [];
 
 function loadTranscriber(modelName) {
@@ -243,15 +242,11 @@ function loadTranscriber(modelName) {
         modelLoaded = resolve;
     });
 
-    // Spanish model is not on CDN - use different host. This Spanish speech to
-    // text Moonshine model is available under a community license for
-    // researchers, developers, small businesses, and creators with less than
-    // $1M in annual revenue. See https://moonshine.ai/license for details.
     if (modelName.includes("es")) {
-        Moonshine.Settings.BASE_ASSET_PATH.MOONSHINE =
-            "https://webrtc.moonshinejs.com/";
+        Moonshine.Settings.BASE_ASSET_PATH.MOONSHINE = "/"
     }
-    transcriber = new Moonshine.StreamTranscriber(
+
+    transcriber = new Moonshine.Transcriber(
         modelName,
         {
             onModelLoadStarted() {
@@ -265,21 +260,18 @@ function loadTranscriber(modelName) {
                 if (text) {
                     if (translator) {
                         translator(text).then((result) => {
-                            caption = result[0].translation_text;
                             currentCaption.innerHTML =
-                                splitLine(caption).join("<br>");
+                                splitLine(result[0].translation_text).join("<br>");
                         });
                     } else {
-                        caption = text;
                         currentCaption.innerHTML =
-                            splitLine(caption).join("<br>");
+                            splitLine(text).join("<br>");
                     }
                 }
             },
             onTranscriptionCommitted(text) {
-                if (caption) {
-                    captions.push(caption);
-                    caption = "";
+                if (text) {
+                    captions.push(text);
                     lastCaption.innerHTML = splitLine(
                         captions[captions.length - 1]
                     ).join("<br>");
@@ -289,7 +281,7 @@ function loadTranscriber(modelName) {
         },
         false
     );
-    transcriber.loadModel();
+    transcriber.load();
     return promise;
 }
 
@@ -339,8 +331,12 @@ function init() {
                 remoteLanguage === languageInput.value
                     ? undefined
                     : `Xenova/opus-mt-${remoteLanguage}-${languageInput.value}`;
+
+            // The Spanish speech to text Moonshine model is available under a community 
+            // license for researchers, developers, small businesses, and creators with 
+            // less than $1M in annual revenue. See https://moonshine.ai/license for details.
             const moonshineModelName =
-                remoteLanguage === "en" ? "model/tiny" : "model/base-es";
+                remoteLanguage === "en" ? "model/tiny" : "model/base-es-non-commercial";
             loadModels(moonshineModelName, translatorModelName).then(() => {
                 log("Starting call.");
                 setVisibility("waitingIcon", false);
