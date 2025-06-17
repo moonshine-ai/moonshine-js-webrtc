@@ -82,6 +82,20 @@ in another terminal:
 echo '{"key":"foo", "payload":"bar"}' | websocat ws://localhost:3000/ -v
 ```
 
+To use this server with your own client, you'll need to change the `socketUrl` 
+variable in `client/client.js ` to point to `ws://localhost:3000/`.
+
+If you're running into problems with the matchmaking process, you can enable
+verbose logging by setting the `MATCHMAKER_VERBOSE` environment variable before
+running `server.js`:
+
+```bash
+export MATCHMAKER_VERBOSE=1
+```
+
+There's also a unit test for the matchmaker functionality at 
+`tests\matchmaker_test.sh`.
+
 ## License
 
 This code and the English-language Moonshine speech to text model it uses are
