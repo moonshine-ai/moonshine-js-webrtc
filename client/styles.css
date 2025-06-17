@@ -83,19 +83,19 @@ html {
 .captions {
     position: absolute;
     bottom: 20px;
-    width: 100%;
-    text-align: center;
     color: #fff;
     font-size: 2rem;
     z-index: 2;
+    height: 96px;
+    width: 720px;
+    overflow-y: hidden;
 }
 .caption {
     background-color: rgba(0, 0, 0, 0.6);
 }
-/* .overlay-controls .form-control,
-.overlay-controls .form-select {
-    min-width: 200px;
-} */
+.update {
+    color: #aaa;
+}
 .controls-container {
     padding: 16px;
 }
