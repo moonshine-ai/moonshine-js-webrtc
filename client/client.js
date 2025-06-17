@@ -35,22 +35,6 @@ let localVideo,
 //
 // WebRTC connection and signaling server WebSocket settings.
 //
-const rtcConfig = {
-    iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun.l.google.com:5349" },
-        { urls: "stun:stun1.l.google.com:3478" },
-        { urls: "stun:stun1.l.google.com:5349" },
-        { urls: "stun:stun2.l.google.com:19302" },
-        { urls: "stun:stun2.l.google.com:5349" },
-        { urls: "stun:stun3.l.google.com:3478" },
-        { urls: "stun:stun3.l.google.com:5349" },
-        { urls: "stun:stun4.l.google.com:19302" },
-        { urls: "stun:stun4.l.google.com:5349" },
-        // TODO TURN service as alternative
-    ],
-};
-
 let signalingServer;
 const maxRetries = 5;
 const retryInterval = 2000; // ms
@@ -66,7 +50,7 @@ let attempts = 0;
 // https://github.com/moonshineai/moonshine-js-webrtc/tree/main/matchmaker/.
 const socketUrl = "wss://matchmaker.moonshine.ai/";
 
-const peerConnection = new RTCPeerConnection(rtcConfig);
+const peerConnection = new RTCPeerConnection();
 let remoteLanguage = undefined;
 let isConnecting;
 
@@ -391,7 +375,12 @@ function init() {
         const msg = JSON.parse(event.data);
         if (msg.key !== sessionKeyInput.value) return;
 
-        if (msg.type === "offer") {
+        if (msg.type === "iceServers") {
+            console.log("Received ICE servers for NAT traversal.")
+            peerConnection.setConfiguration({
+                iceServers: msg.iceServers
+            })
+        } else if (msg.type === "offer") {
             // log("Offer received.");
             remoteLanguage = msg.lang;
             await peerConnection.setRemoteDescription(
