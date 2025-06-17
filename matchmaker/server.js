@@ -60,7 +60,8 @@ const verbose = process.env.MATCHMAKER_VERBOSE || false;
 function log(...args) {
   if (verbose) {
     const timestamp = new Date().toISOString();
-    console.log(timestamp, ...args);
+    const pid = process.pid || "unknown";
+    console.log(timestamp, pid, ...args);
   }
 }
 
