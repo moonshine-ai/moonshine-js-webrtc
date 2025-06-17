@@ -181,13 +181,21 @@ router.ws("/", async (req, res) => {
     });
 
     ws.on("close", () => {
+        log(ws.clientId, `: Client ${ws.clientId} closed connection`);
+        // Look for any sessions that have this client in them and send quit messages
+        // to all other clients in that session.
         for (const [key, clients] of sessions.entries()) {
+            if (!clients.has(ws)) {
+                continue;
+            }
             clients.delete(ws);
             if (clients.size === 0) {
+                log(ws.clientId, `: Deleting empty session ${key}`);
                 sessions.delete(key);
             } else { // Notify peer that this peer has left the call.
                 for (const client of clients) {
                     if (client !== ws && client.readyState === 1) {
+                        log(ws.clientId, `: Sending quit message to client ${client.clientId} in session ${key}`);
                         client.send(
                             JSON.stringify({
                                 type: "quit",
