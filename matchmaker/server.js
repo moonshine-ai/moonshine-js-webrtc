@@ -186,6 +186,17 @@ router.ws("/", async (req, res) => {
             clients.delete(ws);
             if (clients.size === 0) {
                 sessions.delete(key);
+            } else { // Notify peer that this peer has left the call.
+                for (const client of clients) {
+                    if (client !== ws && client.readyState === 1) {
+                        client.send(
+                            JSON.stringify({
+                                type: "quit",
+                                key: key,
+                            })
+                        );
+                    }
+                }
             }
         }
     });
