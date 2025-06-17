@@ -4,6 +4,9 @@ html {
     margin: 0;
     background-color: #000;
 }
+.navbar-brand {
+    height: 40px;
+}
 .video-container {
     position: relative;
     width: 100%;
