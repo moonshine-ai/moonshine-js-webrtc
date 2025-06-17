@@ -142,8 +142,8 @@ router.ws("/", async (req, res) => {
         // connect with the same key, they will be added to this Set, allowing them
         // to exchange messages with each other.
         if (!sessions.has(key)) {
+            log(ws.clientId, `: Creating new session for key: ${key}, sessions: `, sessions);
             sessions.set(key, new Set());
-            log(ws.clientId, `: Creating new session for key: ${key}`);
         } else {
             log(ws.clientId, `: Adding client to existing session for key: ${key}`);
         }
