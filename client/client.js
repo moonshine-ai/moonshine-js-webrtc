@@ -48,8 +48,7 @@ let attempts = 0;
 // instructions on how to run your own instance in the matchmaker/server.js
 // file, and you can find that source code at
 // https://github.com/moonshineai/moonshine-js-webrtc/tree/main/matchmaker/.
-// const socketUrl = "wss://matchmaker.moonshine.ai/";
-const socketUrl = "ws://localhost:3000"
+const socketUrl = "wss://matchmaker.moonshine.ai/";
 
 const peerConnection = new RTCPeerConnection();
 let remoteLanguage = undefined;
