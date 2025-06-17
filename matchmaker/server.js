@@ -157,6 +157,7 @@ router.ws("/", async (req, res) => {
                 ws.send(
                     JSON.stringify({
                         key: key,
+                        clientId: ws.clientId,
                         type: "iceServers",
                         iceServers: iceServers,
                     })
@@ -175,7 +176,9 @@ router.ws("/", async (req, res) => {
                 log(ws.clientId, `: Client ${client.clientId} is not open (readyState: ${client.readyState}), skipping`);
                 continue;
             }
-            log(ws.clientId, `: Sending message type ${data.type} to client ${client.clientId} in session ${key}`);
+            data.fromClientId = ws.clientId;
+            data.toClientId = client.clientId;
+            log(ws.clientId, `: Sending message type ${data.type} from client ${ws.clientId} to client ${client.clientId} in session ${key}`);
             client.send(JSON.stringify(data));
         }
     });
