@@ -116,11 +116,10 @@ router.ws("/", async (req, res) => {
   
     // Called when a new message is received from a client.
     ws.on("message", (message) => {
-        log(ws.clientId, ': Received message:', message.toString().trim());
         let data;
         try {
             data = JSON.parse(message);
-            log(ws.clientId, ': Parsed message data:', data);
+            log(ws.clientId, ': Parsed message data.');
         } catch (e) {
             console.error(ws.clientId, ": Invalid JSON:", message.toString().trim());
             return;
@@ -154,7 +153,7 @@ router.ws("/", async (req, res) => {
         // Send ICE servers to use for NAT traversal
         if (data.type === "offer") {
             getTwilioIceServers().then((iceServers) => {
-                log(ws.clientId, `: Sending ICE servers to client ${ws.clientId} in session ${key}:`, iceServers);
+                log(ws.clientId, `: Sending ICE servers to client ${ws.clientId} in session ${key}`);
                 ws.send(
                     JSON.stringify({
                         key: key,
@@ -171,12 +170,12 @@ router.ws("/", async (req, res) => {
             if (client === ws) {
                 log(ws.clientId, `: Skipping self`);
                 continue;
-              }
-              if (client.readyState !== 1) { // 1 means OPEN
+            }
+            if (client.readyState !== 1) { // 1 means OPEN
                 log(ws.clientId, `: Client ${client.clientId} is not open (readyState: ${client.readyState}), skipping`);
                 continue;
-              }
-              log(ws.clientId, `: Sending message to client ${client.clientId} in session ${key}:`, data);
+            }
+            log(ws.clientId, `: Sending message type ${data.type} to client ${client.clientId} in session ${key}`);
             client.send(JSON.stringify(data));
         }
     });
