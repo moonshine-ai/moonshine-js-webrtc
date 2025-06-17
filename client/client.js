@@ -447,8 +447,6 @@ function init() {
 // ui and signaling flow
 //
 document.addEventListener("DOMContentLoaded", () => {
-    init();
-
     // check if url includes session key
     if (params.has("key")) {
         sessionKeyInput.value = params.get("key");
@@ -456,6 +454,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
         sessionKeyInput.value = getRandomSessionKey();
     }
+
+    init();
 
     navigator.mediaDevices
         .getUserMedia({ video: true, audio: true })
