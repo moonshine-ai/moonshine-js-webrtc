@@ -18,6 +18,7 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-ws": "^5.0.2",
+    "node-machine-id": "^1.1.12",
     "transformers": "^3.1.0",
     "twilio": "^5.7.1",
     "websocket-express": "^3.1.3",

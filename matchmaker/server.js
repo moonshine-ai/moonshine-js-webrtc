@@ -54,14 +54,19 @@
 // Using websocket-express instead of the more widespread express-ws because
 // I was running into issues with express-ws that I couldn't resolve.
 import { WebSocketExpress, Router } from "websocket-express";
-
+import pkg from 'node-machine-id';
+const { machineIdSync } = pkg;
 // Enable verbose logging if the MATCHMAKER_VERBOSE environment variable is set.
 const verbose = process.env.MATCHMAKER_VERBOSE || false;
+let machineId = "unknown";
+if (verbose) {
+    machineId = machineIdSync();
+}
 function log(...args) {
   if (verbose) {
     const timestamp = new Date().toISOString();
     const pid = process.pid || "unknown";
-    console.log(timestamp, pid, ...args);
+    console.log(machineId.slice(-6), timestamp, pid, ...args);
   }
 }
 
