@@ -53,7 +53,7 @@
                                     ></div>
                                     <p id="infoText">
                                         Choose your language, then begin a call
-                                        by entering a shared session key.
+                                        by entering a shared meeting key.
                                     </p>
                                 </div>
                             </div>
@@ -71,7 +71,9 @@
                                         id="sessionKey"
                                         type="text"
                                         class="form-control me-2"
-                                        placeholder="Enter session key"
+                                        placeholder="Enter meeting key"
+                                        maxlength="16"
+                                        pattern=".*\S+.*"
                                     />
                                     <button
                                         id="sessionKeyCopy"
@@ -111,7 +113,7 @@
                 <!--local video moves here when call starts-->
             </div>
         </div>
-        <script type="module" src="client.js?v=20250617"></script>
+        <script type="module" src="client.js?v=20250617a"></script>
         <script>
             function copySessionKey() {
                 const input = document.getElementById("sessionKey");

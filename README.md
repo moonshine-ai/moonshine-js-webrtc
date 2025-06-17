@@ -21,7 +21,7 @@ It includes two key components:
 -   `client`: the app frontend, demonstrating the (super simple) use of
     MoonshineJS for transcribing the audio stream received over WebRTC.
 -   `matchmaker`: a simple WebRTC pairing server, allowing two clients to form a
-    peer-to-peer connection by sharing a session key.
+    peer-to-peer connection by sharing a meeting key.
 
 The only data received by the server is a handshake for connecting clients. All
 audio processing happens locally in the user's browser!
@@ -99,7 +99,7 @@ There's also a unit test for the matchmaker functionality at
 ## License
 
 This code and the English-language Moonshine speech to text model it uses are
-released under the Apache License, Version 2.0, see LICENSE in this folder.
+released under the MIT license, see LICENSE in this folder.
 
 The Spanish-language speech to text model is released under the [Moonshine AI
 Community License](https://moonshine.ai/license) for researchers, developers,

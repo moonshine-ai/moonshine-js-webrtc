@@ -104,6 +104,15 @@ function getRandomSessionKey(length = 16) {
     return result;
 }
 
+function isValidSessionKey(key) {
+    return (
+        key.length > 0 &&
+        key.length <= 16 &&
+        !/\s/.test(key) &&
+        !/[!-/:-@[-`{-~]/.test(key)
+    );
+}
+
 function transitionVideo(toWrapper) {
     const first = localVideo.getBoundingClientRect();
 
@@ -159,7 +168,7 @@ function connect() {
                 log("Choose your language, then press start to join.");
             } else {
                 log(
-                    "Choose your language, then begin a call by entering a shared session key."
+                    "Choose your language, then begin a call by entering a shared meeting key."
                 );
             }
         };
@@ -434,25 +443,31 @@ function init() {
                 }, 1000);
             }
         } else if (msg.type === "quit") {
-            alert("Peer has left the call. Ending meeting.")
-            window.location.reload()
+            alert("Peer has left the call. Ending meeting.");
+            window.location.reload();
         }
     };
 
     startSessionBtn.onclick = async () => {
-        if (peerConnection.signalingState === "stable") {
-            log("Room created. Share the session key to start a call.");
-            setVisibility("waitingIcon", true);
-            disableControls(true);
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            signalingServer.send(
-                JSON.stringify({
-                    type: "offer",
-                    key: sessionKeyInput.value,
-                    lang: languageInput.value,
-                    offer,
-                })
+        if (isValidSessionKey(sessionKeyInput.value)) {
+            if (peerConnection.signalingState === "stable") {
+                log("Room created. Share the meeting key to start a call.");
+                setVisibility("waitingIcon", true);
+                disableControls(true);
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                signalingServer.send(
+                    JSON.stringify({
+                        type: "offer",
+                        key: sessionKeyInput.value,
+                        lang: languageInput.value,
+                        offer,
+                    })
+                );
+            }
+        } else {
+            alert(
+                "Invalid meeting key. Must have:\n- Between 1 and 16 characters\n- No spaces, punctuation, or special characters"
             );
         }
     };
@@ -463,7 +478,7 @@ function init() {
 //
 document.addEventListener("DOMContentLoaded", () => {
     // check if url includes session key
-    if (params.has("key")) {
+    if (params.has("key") && isValidSessionKey(params.get("key"))) {
         sessionKeyInput.value = params.get("key");
         sessionKeyInput.disabled = true;
     } else {
