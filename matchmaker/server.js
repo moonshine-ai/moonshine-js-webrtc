@@ -5,8 +5,8 @@
  *
  * This server handles WebSocket connections for matchmaking webrtc clients. It
  * allows clients to connect, find peers, and exchange messages based on a
- * unique key. 
- * 
+ * unique key.
+ *
  * The canonical source for this code is at
  * https://github.com/moonshineai/moonshine-js-webrtc where you can find more
  * information about the whole Moonshine AI WebRTC system. This `matchmaker`
@@ -14,14 +14,14 @@
  * server. You should be able to run this server on any hosting service that
  * supports VPS, such as Digital Ocean's App Platform, AWS, or any other service
  * that allows you to create server instances from dockerfiles.
- * 
+ *
  * To run it locally, first install the dependencies with `npm install`, then
  * start the server with `node server.js`. You can test that it's working by
  * using the websocat (https://github.com/vi/websocat) command line tool to
  * connect to the server and send messages:
  *
  * echo '{"key":"foo", "payload":"bar"}' | websocat ws://localhost:3000/ -v
- * 
+ *
  * The basic flow is:
  * 1. Client A connects to the server via a websocket.
  * 2. Client A sends a message with a unique key, defining the "room name" of
@@ -43,25 +43,35 @@
  * streaming. It is not intended to handle any media streaming itself. It is
  * agnostic to the content of the messages though, and so in theory could be
  * used to broadcast any kind of data between clients that share a key.
- * 
+ *
  * There should be an instance of this server running at
  * wss://matchmaker.moonshine.ai/ that you're welcome to use for testing, but we
  * recommend running your own instance for production use, since we make no
- * guarantees about supporting external apps using this server. 
- * 
-*/
+ * guarantees about supporting external apps using this server.
+ *
+ */
 
 // Using websocket-express instead of the more widespread express-ws because
 // I was running into issues with express-ws that I couldn't resolve.
-import { WebSocketExpress, Router } from 'websocket-express';
+import { WebSocketExpress, Router } from "websocket-express";
 
 var app = new WebSocketExpress();
 const router = new Router();
 
+// Using Twilio for NAT traversal (STUN/TURN) provides more reliability
+import twilio from "twilio";
+import dotenv from "dotenv";
+dotenv.config();
+
+const twilioClient = twilio(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_AUTH_TOKEN
+);
+
 // Most VPS hosting services will set the PORT environment variable to the
 // port they want you to run your app on, so we use that if it's set, otherwise
 // we default to port 3000. This is especially important for running secure
-// WebSocket connections (wss://) which require an https connection first, so 
+// WebSocket connections (wss://) which require an https connection first, so
 // we can't just assume port 80.
 const port = process.env.PORT || 3000;
 
@@ -72,60 +82,79 @@ const port = process.env.PORT || 3000;
 // server, an in-memory Map is sufficient.
 const sessions = new Map();
 
+async function getTwilioIceServers() {
+    const token = await twilioClient.tokens.create();
+    return token.iceServers;
+}
+
 // The entry point for WebSocket connections. Clients will connect to this
 // endpoint and send messages to join a session or exchange data.
-router.ws('/', async (req, res) => {
-  const ws = await res.accept();
+router.ws("/", async (req, res) => {
+    const ws = await res.accept();
 
-  // Called when a new message is received from a client.
-  ws.on('message', (message) => {
-    let data;
-    try {
-      data = JSON.parse(message);
-    } catch (e) {
-      console.error('Invalid JSON:', message);
-      return;
-    }
+    // Called when a new message is received from a client.
+    ws.on("message", (message) => {
+        let data;
+        try {
+            data = JSON.parse(message);
+        } catch (e) {
+            console.error("Invalid JSON:", message);
+            return;
+        }
 
-    // The messages are expected to be in JSON format with at least a 'key'
-    // string member. 'key' is the unique identifier for the session, and
-    // determines which other clients should receive the message. The other
-    // members of the message can be anything, and are relayed to other clients
-    // in the same session untouched by this server.
-    const { key } = data;
-    if (!key) return;
+        // The messages are expected to be in JSON format with at least a 'key'
+        // string member. 'key' is the unique identifier for the session, and
+        // determines which other clients should receive the message. The other
+        // members of the message can be anything, and are relayed to other clients
+        // in the same session untouched by this server.
+        const { key } = data;
+        if (!key) return;
 
-    // If this unique key does not exist in the sessions map, this must be the
-    // first client to connect for this session, so we create a new Set that
-    // holds this clients WebSocket connection information. If other clients
-    // connect with the same key, they will be added to this Set, allowing them
-    // to exchange messages with each other.
-    if (!sessions.has(key)) {
-      sessions.set(key, new Set());
-    }
-    sessions.get(key).add(ws);
+        // If this unique key does not exist in the sessions map, this must be the
+        // first client to connect for this session, so we create a new Set that
+        // holds this clients WebSocket connection information. If other clients
+        // connect with the same key, they will be added to this Set, allowing them
+        // to exchange messages with each other.
+        if (!sessions.has(key)) {
+            sessions.set(key, new Set());
+        }
+        sessions.get(key).add(ws);
 
-    // Iterate over all other clients that have registered their connections
-    // with the same key identifier and rebroadcast the message to them.
-    for (const client of sessions.get(key)) {
-      if (client !== ws && client.readyState === 1) { // 1 means OPEN
-        client.send(JSON.stringify(data));
-      }
-    }
-  });
+        // Send ICE servers to use for NAT traversal
+        if (data.type === "offer") {
+            getTwilioIceServers().then((iceServers) => {
+                ws.send(
+                    JSON.stringify({
+                        key: key,
+                        type: "iceServers",
+                        iceServers: iceServers,
+                    })
+                );
+            });
+        }
 
-  ws.on('close', () => {
-    for (const [key, clients] of sessions.entries()) {
-      clients.delete(ws);
-      if (clients.size === 0) {
-        sessions.delete(key);
-      }
-    }
-  });
+        // Iterate over all other clients that have registered their connections
+        // with the same key identifier and rebroadcast the message to them.
+        for (const client of sessions.get(key)) {
+            if (client !== ws && client.readyState === 1) {
+                // 1 means OPEN
+                client.send(JSON.stringify(data));
+            }
+        }
+    });
+
+    ws.on("close", () => {
+        for (const [key, clients] of sessions.entries()) {
+            clients.delete(ws);
+            if (clients.size === 0) {
+                sessions.delete(key);
+            }
+        }
+    });
 });
 
 app.use(router);
 
 app.listen(port, () => {
-  console.log(`Matchmaker app listening on port ${port}`);
+    console.log(`Matchmaker app listening on port ${port}`);
 });
