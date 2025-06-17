@@ -55,6 +55,15 @@
 // I was running into issues with express-ws that I couldn't resolve.
 import { WebSocketExpress, Router } from "websocket-express";
 
+// Enable verbose logging if the MATCHMAKER_VERBOSE environment variable is set.
+const verbose = process.env.MATCHMAKER_VERBOSE || false;
+function log(...args) {
+  if (verbose) {
+    const timestamp = new Date().toISOString();
+    console.log(timestamp, ...args);
+  }
+}
+
 var app = new WebSocketExpress();
 const router = new Router();
 
@@ -74,6 +83,7 @@ const twilioClient = twilio(
 // WebSocket connections (wss://) which require an https connection first, so
 // we can't just assume port 80.
 const port = process.env.PORT || 3000;
+log(`Using port ${port}`);
 
 // Maps session keys to sets of WebSocket connections, so a message sent by one
 // client can be relayed to all other clients in the same session. In a more
@@ -82,6 +92,14 @@ const port = process.env.PORT || 3000;
 // server, an in-memory Map is sufficient.
 const sessions = new Map();
 
+// A counter for assigning unique IDs to clients.
+var clientId = 0;
+
+// Send a request to Twilio to get ICE servers for NAT traversal.
+// This helps improve the reliability of the WebRTC connection by providing
+// a fallback if the direct connection fails. You'll need to set the
+// TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables to use this,
+// or just leave it blank to use non-commercial servers.
 async function getTwilioIceServers() {
     const token = await twilioClient.tokens.create();
     return token.iceServers;
@@ -91,14 +109,20 @@ async function getTwilioIceServers() {
 // endpoint and send messages to join a session or exchange data.
 router.ws("/", async (req, res) => {
     const ws = await res.accept();
-
+    // Assign a unique ID to the client for logging purposes.
+    ws.clientId = clientId;
+    clientId++;
+    log(ws.clientId, ': WebSocket connection accepted');
+  
     // Called when a new message is received from a client.
     ws.on("message", (message) => {
+        log(ws.clientId, ': Received message:', message.toString().trim());
         let data;
         try {
             data = JSON.parse(message);
+            log(ws.clientId, ': Parsed message data:', data);
         } catch (e) {
-            console.error("Invalid JSON:", message);
+            console.error(ws.clientId, ": Invalid JSON:", message.toString().trim());
             return;
         }
 
@@ -108,8 +132,11 @@ router.ws("/", async (req, res) => {
         // members of the message can be anything, and are relayed to other clients
         // in the same session untouched by this server.
         const { key } = data;
-        if (!key) return;
-
+        if (!key) {
+            log(ws.clientId, ': Message does not contain a key:', data);
+            return;
+        }
+      
         // If this unique key does not exist in the sessions map, this must be the
         // first client to connect for this session, so we create a new Set that
         // holds this clients WebSocket connection information. If other clients
@@ -117,12 +144,17 @@ router.ws("/", async (req, res) => {
         // to exchange messages with each other.
         if (!sessions.has(key)) {
             sessions.set(key, new Set());
+            log(ws.clientId, `: Creating new session for key: ${key}`);
+        } else {
+            log(ws.clientId, `: Adding client to existing session for key: ${key}`);
         }
         sessions.get(key).add(ws);
+        log(ws.clientId, `: Session for key ${key} has ${sessions.get(key).size} clients`);
 
         // Send ICE servers to use for NAT traversal
         if (data.type === "offer") {
             getTwilioIceServers().then((iceServers) => {
+                log(ws.clientId, `: Sending ICE servers to client ${ws.clientId} in session ${key}:`, iceServers);
                 ws.send(
                     JSON.stringify({
                         key: key,
@@ -136,10 +168,16 @@ router.ws("/", async (req, res) => {
         // Iterate over all other clients that have registered their connections
         // with the same key identifier and rebroadcast the message to them.
         for (const client of sessions.get(key)) {
-            if (client !== ws && client.readyState === 1) {
-                // 1 means OPEN
-                client.send(JSON.stringify(data));
-            }
+            if (client === ws) {
+                log(ws.clientId, `: Skipping self`);
+                continue;
+              }
+              if (client.readyState !== 1) { // 1 means OPEN
+                log(ws.clientId, `: Client ${client.clientId} is not open (readyState: ${client.readyState}), skipping`);
+                continue;
+              }
+              log(ws.clientId, `: Sending message to client ${client.clientId} in session ${key}:`, data);
+            client.send(JSON.stringify(data));
         }
     });
 
@@ -148,6 +186,17 @@ router.ws("/", async (req, res) => {
             clients.delete(ws);
             if (clients.size === 0) {
                 sessions.delete(key);
+            } else { // Notify peer that this peer has left the call.
+                for (const client of clients) {
+                    if (client !== ws && client.readyState === 1) {
+                        client.send(
+                            JSON.stringify({
+                                type: "quit",
+                                key: key,
+                            })
+                        );
+                    }
+                }
             }
         }
     });

@@ -48,7 +48,8 @@ let attempts = 0;
 // instructions on how to run your own instance in the matchmaker/server.js
 // file, and you can find that source code at
 // https://github.com/moonshineai/moonshine-js-webrtc/tree/main/matchmaker/.
-const socketUrl = "wss://matchmaker.moonshine.ai/";
+// const socketUrl = "wss://matchmaker.moonshine.ai/";
+const socketUrl = "ws://localhost:3000"
 
 const peerConnection = new RTCPeerConnection();
 let remoteLanguage = undefined;
@@ -189,6 +190,7 @@ let translator;
 let transcriber;
 let caption = "";
 let captionTimeout;
+let remoteStream;
 
 function getFormattedCaption(text, maxChars, maxLines, commit = true) {
     if (caption.length + text.length >= maxChars * maxLines) {
@@ -223,18 +225,18 @@ function loadTranscriber(modelName) {
             onSpeechStart() {
                 // cancel the timeout to clear the caption after inactivity
                 if (captionTimeout) {
-                    clearTimeout(captionTimeout)
+                    clearTimeout(captionTimeout);
                 }
             },
             onSpeechEnd() {
                 // set a timeout to clear the caption after inactivity
                 if (captionTimeout) {
-                    clearTimeout(captionTimeout)
+                    clearTimeout(captionTimeout);
                 }
                 captionTimeout = setTimeout(() => {
-                    caption = ""
-                    currentCaption.innerHTML = ""
-                }, 5000)
+                    caption = "";
+                    currentCaption.innerHTML = "";
+                }, 5000);
             },
             onTranscriptionUpdated(text) {
                 if (text) {
@@ -319,6 +321,22 @@ async function loadModels(moonshineModelName, translatorModelName) {
     ]);
 }
 
+function startCall() {
+    log("Starting call.");
+    setVisibility("waitingIcon", false);
+    setVisibility("loadingIcon", false);
+    transitionVideo(document.getElementById("localVideoWrapper"));
+
+    remoteVideo.style.visibility = "visible";
+    remoteVideo.style.opacity = "1";
+    remoteVideo.srcObject = remoteStream;
+
+    transcriber.attachStream(remoteStream);
+    transcriber.start();
+
+    langText.textContent = remoteLanguage + " → " + languageInput.value;
+}
+
 function init() {
     connect();
 
@@ -340,20 +358,14 @@ function init() {
                     ? "model/tiny"
                     : "model/base-es-non-commercial";
             loadModels(moonshineModelName, translatorModelName).then(() => {
-                log("Starting call.");
-                setVisibility("waitingIcon", false);
-                setVisibility("loadingIcon", false);
-                transitionVideo(document.getElementById("localVideoWrapper"));
-
-                remoteVideo.style.visibility = "visible";
-                remoteVideo.style.opacity = "1";
-                remoteVideo.srcObject = streams[0];
-
-                transcriber.attachStream(streams[0]);
-                transcriber.start();
-
-                langText.textContent =
-                    remoteLanguage + " → " + languageInput.value;
+                log("Ready to go, waiting for other caller to load...");
+                remoteStream = streams[0];
+                signalingServer.send(
+                    JSON.stringify({
+                        type: "ready",
+                        key: sessionKeyInput.value,
+                    })
+                );
             });
         }
     };
@@ -376,10 +388,10 @@ function init() {
         if (msg.key !== sessionKeyInput.value) return;
 
         if (msg.type === "iceServers") {
-            console.log("Received ICE servers for NAT traversal.")
+            console.log("Received ICE servers for NAT traversal.");
             peerConnection.setConfiguration({
-                iceServers: msg.iceServers
-            })
+                iceServers: msg.iceServers,
+            });
         } else if (msg.type === "offer") {
             // log("Offer received.");
             remoteLanguage = msg.lang;
@@ -410,6 +422,21 @@ function init() {
             } catch (e) {
                 console.error("Error adding ice candidate", e);
             }
+        } else if (msg.type === "ready") {
+            console.log("Received ready message from peer.");
+            if (remoteStream) {
+                startCall();
+            } else {
+                const readyInterval = setInterval(() => {
+                    if (remoteStream) {
+                        clearInterval(readyInterval);
+                        startCall();
+                    }
+                }, 1000);
+            }
+        } else if (msg.type === "quit") {
+            alert("Peer has left the call. Ending meeting.")
+            window.location.reload()
         }
     };
 
