@@ -1,5 +1,5 @@
 /* Moonshine WebRTC Translator Client
- * 
+ *
  * (C) 2025 Moonshine AI, "Evan King" <evan@moonshine.ai>. Released under the
  * MIT License
  *
@@ -28,7 +28,6 @@ let localVideo,
     sessionKeyInput,
     languageInput,
     startSessionBtn,
-    lastCaption,
     currentCaption,
     infoText,
     langText;
@@ -80,7 +79,6 @@ document.addEventListener("DOMContentLoaded", () => {
     sessionKeyInput = document.getElementById("sessionKey");
     languageInput = document.getElementById("languageSelect");
     startSessionBtn = document.getElementById("startSession");
-    lastCaption = document.getElementById("lastCaption");
     currentCaption = document.getElementById("currentCaption");
     infoText = document.getElementById("infoText");
     langText = document.getElementById("langText");
@@ -157,35 +155,6 @@ function setVisibility(icon, visible) {
     }
 }
 
-function splitLine(text, min = 40, max = 60) {
-    const words = text.split(" ");
-    const lines = [];
-    let currentLine = "";
-
-    for (let word of words) {
-        const testLine = currentLine.length ? `${currentLine} ${word}` : word;
-
-        if (testLine.length <= max) {
-            currentLine = testLine;
-        } else {
-            if (currentLine.length >= min) {
-                lines.push(currentLine);
-                currentLine = word;
-            } else {
-                currentLine = testLine;
-                lines.push(currentLine);
-                currentLine = "";
-            }
-        }
-    }
-
-    if (currentLine) {
-        lines.push(currentLine);
-    }
-
-    return lines;
-}
-
 function connect() {
     disableControls(true);
 
@@ -230,11 +199,23 @@ function connect() {
 }
 
 //
-// transcriber/translator loading
+// transcriber/translator loading and callbacks
 //
 let translator;
 let transcriber;
-let captions = [];
+let caption = "";
+let captionTimeout;
+
+function getFormattedCaption(text, maxChars, maxLines, commit = true) {
+    if (caption.length + text.length >= maxChars * maxLines) {
+        caption = "";
+    }
+    if (commit) {
+        caption = `${caption} ${text}`;
+        return caption;
+    }
+    return `${caption} <span class="update">${text}</mark>`;
+}
 
 function loadTranscriber(modelName) {
     let modelLoaded;
@@ -242,9 +223,8 @@ function loadTranscriber(modelName) {
         modelLoaded = resolve;
     });
 
-    if (modelName.includes("es")) {
-        Moonshine.Settings.BASE_ASSET_PATH.MOONSHINE = "/"
-    }
+    // commit more frequently than default
+    Moonshine.Settings.STREAM_COMMIT_INTERVAL = 16 * 4;
 
     transcriber = new Moonshine.Transcriber(
         modelName,
@@ -256,30 +236,66 @@ function loadTranscriber(modelName) {
                 console.log(`Transcriber Moonshine ${modelName} loaded.`);
                 modelLoaded();
             },
+            onSpeechStart() {
+                // cancel the timeout to clear the caption after inactivity
+                if (captionTimeout) {
+                    clearTimeout(captionTimeout)
+                }
+            },
+            onSpeechEnd() {
+                // set a timeout to clear the caption after inactivity
+                if (captionTimeout) {
+                    clearTimeout(captionTimeout)
+                }
+                captionTimeout = setTimeout(() => {
+                    caption = ""
+                    currentCaption.innerHTML = ""
+                }, 5000)
+            },
             onTranscriptionUpdated(text) {
                 if (text) {
                     if (translator) {
                         translator(text).then((result) => {
-                            currentCaption.innerHTML =
-                                splitLine(result[0].translation_text).join("<br>");
+                            currentCaption.innerHTML = getFormattedCaption(
+                                result[0].translation_text,
+                                60,
+                                2,
+                                false
+                            );
                         });
                     } else {
-                        currentCaption.innerHTML =
-                            splitLine(text).join("<br>");
+                        currentCaption.innerHTML = getFormattedCaption(
+                            text,
+                            60,
+                            2,
+                            false
+                        );
                     }
                 }
             },
             onTranscriptionCommitted(text) {
                 if (text) {
-                    captions.push(text);
-                    lastCaption.innerHTML = splitLine(
-                        captions[captions.length - 1]
-                    ).join("<br>");
-                    currentCaption.innerHTML = "";
+                    if (translator) {
+                        translator(text).then((result) => {
+                            currentCaption.innerHTML = getFormattedCaption(
+                                result[0].translation_text,
+                                60,
+                                2,
+                                true
+                            );
+                        });
+                    } else {
+                        currentCaption.innerHTML = getFormattedCaption(
+                            text,
+                            60,
+                            2,
+                            true
+                        );
+                    }
                 }
             },
         },
-        false
+        false // streaming mode, which calls onTranscriptionUpdated periodically with speculative transcriptions.
     );
     transcriber.load();
     return promise;
@@ -332,11 +348,13 @@ function init() {
                     ? undefined
                     : `Xenova/opus-mt-${remoteLanguage}-${languageInput.value}`;
 
-            // The Spanish speech to text Moonshine model is available under a community 
-            // license for researchers, developers, small businesses, and creators with 
+            // The Spanish speech to text Moonshine model is available under a community
+            // license for researchers, developers, small businesses, and creators with
             // less than $1M in annual revenue. See https://moonshine.ai/license for details.
             const moonshineModelName =
-                remoteLanguage === "en" ? "model/tiny" : "model/base-es-non-commercial";
+                remoteLanguage === "en"
+                    ? "model/tiny"
+                    : "model/base-es-non-commercial";
             loadModels(moonshineModelName, translatorModelName).then(() => {
                 log("Starting call.");
                 setVisibility("waitingIcon", false);
