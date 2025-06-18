@@ -1,6 +1,7 @@
 # MoonshineJS + WebRTC
 
-Video calling with real-time, on-device transcription and translation. From [Moonshine AI](https://moonshine.ai/), see a live demo at
+Video calling with real-time, on-device transcription and translation. From
+[Moonshine AI](https://moonshine.ai/), see a live demo at
 [webrtc.moonshine.ai](https://webrtc.moonshine.ai).
 
 <!-- toc -->
@@ -43,7 +44,7 @@ you can initiate a video call.
 For production we use a Google Cloud bucket, so deployment is as simple as
 
 ```bash
-gsutil cp -a publicRead client/* gs://webrtc.moonshine.ai/
+gsutil cp client/* gs://webrtc.moonshine.ai/
 ```
 
 ## Running the Matchmaker
@@ -57,10 +58,9 @@ Instead the
 [matchmaker/server.js](https://github.com/moonshine-ai/moonshine-js-webrtc/matchmaker/server.js)
 needs to be running somewhere. By default the
 [client/client.js](https://github.com/moonshine-ai/moonshine-js-webrtc/client/client.js)
-script uses the server run by Moonshine AI at `wss://mm.moonshine.ai:423/`
-which is fine for testing or prototyping purposes, but you'll want to host your
-own in a production environment, since we can't offer availability guarantees
-for ours.
+script uses the server run by Moonshine AI at `wss://mm.moonshine.ai:423/` which
+is fine for testing or prototyping purposes, but you'll want to host your own in
+a production environment, since we can't offer availability guarantees for ours.
 
 The matchmaker code is designed to run straightforwardly on VPS services like
 Digital Ocean's App platform. The [server
@@ -82,7 +82,7 @@ in another terminal:
 echo '{"key":"foo", "payload":"bar"}' | websocat ws://localhost:3000/ -v
 ```
 
-To use this server with your own client, you'll need to change the `socketUrl` 
+To use this server with your own client, you'll need to change the `socketUrl`
 variable in `client/client.js ` to point to `ws://localhost:3000/`.
 
 If you're running into problems with the matchmaking process, you can enable
@@ -93,7 +93,7 @@ running `server.js`:
 export MATCHMAKER_VERBOSE=1
 ```
 
-There's also a unit test for the matchmaker functionality at 
+There's also a unit test for the matchmaker functionality at
 `tests\matchmaker_test.sh`.
 
 ## License
@@ -109,5 +109,4 @@ We're grateful to the team behind [HuggingFace
 TransformersJS](https://huggingface.co/docs/transformers.js/en/index) for the
 library that allows us to run the translation component of this demo, and the
 [Helsinki NLP group](https://huggingface.co/Helsinki-NLP) for their Spanish to
-English and English to Spanish test-to-text translation
-models.
+English and English to Spanish test-to-text translation models.
