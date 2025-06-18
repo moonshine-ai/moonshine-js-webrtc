@@ -50,17 +50,20 @@
  * guarantees about supporting external apps using this server.
  *
  */
+const WebSocket = require('ws');
+const https = require('https');
+const fs = require('fs');
 
-// Using websocket-express instead of the more widespread express-ws because
-// I was running into issues with express-ws that I couldn't resolve.
-import { WebSocketExpress, Router } from "websocket-express";
-import pkg from 'node-machine-id';
-const { machineIdSync } = pkg;
+const dotenv = require("dotenv");
+dotenv.config();
+
+const nmi = require('node-machine-id');
+
 // Enable verbose logging if the MATCHMAKER_VERBOSE environment variable is set.
 const verbose = process.env.MATCHMAKER_VERBOSE || false;
 let machineId = "unknown";
 if (verbose) {
-    machineId = machineIdSync();
+    machineId = nmi.machineIdSync();
 }
 function log(...args) {
   if (verbose) {
@@ -70,13 +73,16 @@ function log(...args) {
   }
 }
 
-var app = new WebSocketExpress();
-const router = new Router();
+const server = https.createServer({
+  cert: fs.readFileSync(process.env.SSL_CERT),
+  key: fs.readFileSync(process.env.SSL_KEY)
+});
+
+console.log(WebSocket);
+const wss = new WebSocket.Server({ server });
 
 // Using Twilio for NAT traversal (STUN/TURN) provides more reliability
-import twilio from "twilio";
-import dotenv from "dotenv";
-dotenv.config();
+const twilio = require("twilio");
 
 const twilioClient = twilio(
     process.env.TWILIO_ACCOUNT_SID,
@@ -113,8 +119,7 @@ async function getTwilioIceServers() {
 
 // The entry point for WebSocket connections. Clients will connect to this
 // endpoint and send messages to join a session or exchange data.
-router.ws("/", async (req, res) => {
-    const ws = await res.accept();
+wss.on('connection', (ws) => {
     // Assign a unique ID to the client for logging purposes.
     ws.clientId = clientId;
     clientId++;
@@ -218,8 +223,6 @@ router.ws("/", async (req, res) => {
     });
 });
 
-app.use(router);
-
-app.listen(port, () => {
-    console.log(`Matchmaker app listening on port ${port}`);
+server.listen(port, () => {
+  console.log(`Matchmaking server running on port ${port}`);
 });
