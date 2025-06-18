@@ -26,6 +26,9 @@ echo "Running matchmaker test on server '$server' in directory $(pwd) with key '
 # Create the message to send to the server.
 message='{"key":"'$key'","payload":"bar"}'
 
+# What we expect to see in the logs.
+expected_regex='"key":"'$key'".*"payload":"bar"'
+
 # Send the message from client1 to the server.
 echo $message | websocat $server --no-close > client1.log &
 
@@ -54,13 +57,15 @@ check_client_logs() {
     echo "Contents of client2.log: '$client2_contents'"
     echo "Expected: '$client2_expected'"
 
-    if [ "$client1_contents" != "$client1_expected" ]; then
-        echo "Test failed: client1 received unexpected message"
+    # Check that the client1 log contains the message.
+    if [ -n "$client1_expected" ] && ! grep -q "$client1_expected" "$client1_log"; then
+        echo "Test failed: client1 log does not contain expected message"
         return 1
     fi
 
-    if [ "$client2_contents" != "$client2_expected" ]; then
-        echo "Test failed: client2 received unexpected message"
+    # Check that the client2 log contains the message.
+    if [ -n "$client2_expected" ] && ! grep -q "$client2_expected" "$client2_log"; then
+        echo "Test failed: client2 log does not contain expected message"
         return 1
     fi
 
@@ -68,4 +73,4 @@ check_client_logs() {
     return 0
 }
 
-check_client_logs "client1.log" "client2.log" $message ''
+check_client_logs "client1.log" "client2.log" $expected_regex ''

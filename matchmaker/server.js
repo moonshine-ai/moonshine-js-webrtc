@@ -51,6 +51,7 @@
  *
  */
 const WebSocket = require('ws');
+const http = require('http');
 const https = require('https');
 const fs = require('fs');
 
@@ -73,12 +74,17 @@ function log(...args) {
   }
 }
 
-const server = https.createServer({
-  cert: fs.readFileSync(process.env.SSL_CERT),
-  key: fs.readFileSync(process.env.SSL_KEY)
-});
+// Only use SSL if the SSL_CERT and SSL_KEY environment variables are set.
+let server;
+if (process.env.SSL_CERT && process.env.SSL_KEY) {
+    server = https.createServer({
+        cert: fs.readFileSync(process.env.SSL_CERT),
+        key: fs.readFileSync(process.env.SSL_KEY)
+    });
+} else {
+    server = http.createServer();
+}
 
-console.log(WebSocket);
 const wss = new WebSocket.Server({ server });
 
 // Using Twilio for NAT traversal (STUN/TURN) provides more reliability
