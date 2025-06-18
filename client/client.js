@@ -28,6 +28,7 @@ let localVideo,
     sessionKeyInput,
     languageInput,
     startSessionBtn,
+    joinSessionBtn,
     currentCaption,
     infoText,
     langText;
@@ -63,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
     sessionKeyInput = document.getElementById("sessionKey");
     languageInput = document.getElementById("languageSelect");
     startSessionBtn = document.getElementById("startSession");
+    joinSessionBtn = document.getElementById("joinSession");
     currentCaption = document.getElementById("currentCaption");
     infoText = document.getElementById("infoText");
     langText = document.getElementById("langText");
@@ -84,9 +86,7 @@ function log(text) {
 function disableControls(disabled) {
     languageInput.disabled = disabled;
     startSessionBtn.disabled = disabled;
-
-    // session key entry is locked when provided via URL
-    if (!params.has("key")) sessionKeyInput.disabled = disabled;
+    joinSessionBtn.disabled = disabled;
 }
 
 // Generates a random session key of the specified length (default 16
@@ -101,7 +101,10 @@ function getRandomSessionKey(length = 16) {
         const randomIndex = Math.floor(Math.random() * chars.length);
         result += chars[randomIndex];
     }
-    return result;
+    return `${
+        window.location.origin.replace(/^https?:\/\//, "") +
+        window.location.pathname
+    }?key=${result}`;
 }
 
 function isValidSessionKey(key) {
@@ -164,12 +167,10 @@ function connect() {
 
         signalingServer.onopen = () => {
             disableControls(false);
-            if (params.has("key")) {
-                log("Choose your language, then press start to join.");
+            if (params.has("key") && isValidSessionKey(params.get("key"))) {
+                log("Choose your language, then join the meeting.");
             } else {
-                log(
-                    "Choose your language, then begin a call by entering a shared meeting key."
-                );
+                log("Choose your language, then start a new meeting.");
             }
         };
 
@@ -345,6 +346,35 @@ function startCall() {
     langText.textContent = remoteLanguage + " → " + languageInput.value;
 }
 
+function getSessionKey() {
+    return new URLSearchParams(sessionKeyInput.value.split("?")[1]).get("key");
+}
+
+async function joinMeeting() {
+    if (isValidSessionKey(getSessionKey())) {
+        if (peerConnection.signalingState === "stable") {
+            log("Meeting created. Waiting for someone to join.");
+            setVisibility("waitingIcon", true);
+            setVisibility("copySession", true);
+            disableControls(true);
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            signalingServer.send(
+                JSON.stringify({
+                    type: "offer",
+                    key: getSessionKey(),
+                    lang: languageInput.value,
+                    offer,
+                })
+            );
+        }
+    } else {
+        alert(
+            "Invalid meeting key. Must have:\n- Between 1 and 16 characters\n- No spaces, punctuation, or special characters"
+        );
+    }
+}
+
 function init() {
     connect();
 
@@ -371,7 +401,7 @@ function init() {
                 signalingServer.send(
                     JSON.stringify({
                         type: "ready",
-                        key: sessionKeyInput.value,
+                        key: getSessionKey(),
                     })
                 );
             });
@@ -384,7 +414,7 @@ function init() {
             signalingServer.send(
                 JSON.stringify({
                     type: "ice",
-                    key: sessionKeyInput.value,
+                    key: getSessionKey(),
                     candidate: event.candidate,
                 })
             );
@@ -393,7 +423,7 @@ function init() {
 
     signalingServer.onmessage = async (event) => {
         const msg = JSON.parse(event.data);
-        if (msg.key !== sessionKeyInput.value) return;
+        if (msg.key !== getSessionKey()) return;
 
         if (msg.type === "iceServers") {
             console.log("Received ICE servers for NAT traversal.");
@@ -444,33 +474,13 @@ function init() {
             }
         } else if (msg.type === "quit") {
             alert("Peer has left the call. Ending meeting.");
-            window.location.reload();
+            window.location.href =
+                window.location.origin + window.location.pathname;
         }
     };
 
-    startSessionBtn.onclick = async () => {
-        if (isValidSessionKey(sessionKeyInput.value)) {
-            if (peerConnection.signalingState === "stable") {
-                log("Room created. Share the meeting key to start a call.");
-                setVisibility("waitingIcon", true);
-                disableControls(true);
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-                signalingServer.send(
-                    JSON.stringify({
-                        type: "offer",
-                        key: sessionKeyInput.value,
-                        lang: languageInput.value,
-                        offer,
-                    })
-                );
-            }
-        } else {
-            alert(
-                "Invalid meeting key. Must have:\n- Between 1 and 16 characters\n- No spaces, punctuation, or special characters"
-            );
-        }
-    };
+    startSessionBtn.onclick = joinMeeting;
+    joinSessionBtn.onclick = joinMeeting;
 }
 
 //
@@ -479,8 +489,13 @@ function init() {
 document.addEventListener("DOMContentLoaded", () => {
     // check if url includes session key
     if (params.has("key") && isValidSessionKey(params.get("key"))) {
-        sessionKeyInput.value = params.get("key");
-        sessionKeyInput.disabled = true;
+        sessionKeyInput.value = `${
+            window.location.origin.replace(/^https?:\/\//, "") +
+            window.location.pathname
+        }?key=${params.get("key")}`;
+        setVisibility("joinSession", true);
+        setVisibility("startSession", false);
+        setVisibility("copySession", true)
     } else {
         sessionKeyInput.value = getRandomSessionKey();
     }

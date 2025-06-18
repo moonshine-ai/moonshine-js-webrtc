@@ -109,8 +109,11 @@ html {
 }
 @keyframes copiedFlash {
   0%   { background-color: #B7DDFB; }
-  100% { background-color: white; }
+  100% { background-color: #e9ecef; }
 }
 .copied {
   animation: copiedFlash 0.8s ease;
+}
+#joinSession, #copySession {
+    display: none;
 }
