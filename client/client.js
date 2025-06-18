@@ -26,9 +26,10 @@ import { pipeline } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers
 let localVideo,
     remoteVideo,
     sessionKeyInput,
-    languageInput,
-    startSessionBtn,
-    joinSessionBtn,
+    startSessionEnglishBtn,
+    startSessionSpanishBtn,
+    joinSessionEnglishBtn,
+    joinSessionSpanishBtn,
     currentCaption,
     infoText,
     langText;
@@ -52,6 +53,7 @@ let attempts = 0;
 const socketUrl = "wss://mm.moonshine.ai:423/";
 
 const peerConnection = new RTCPeerConnection();
+let localLanguage = undefined;
 let remoteLanguage = undefined;
 let isConnecting;
 
@@ -62,9 +64,10 @@ document.addEventListener("DOMContentLoaded", () => {
     localVideo = document.getElementById("localVideo");
     remoteVideo = document.getElementById("remoteVideo");
     sessionKeyInput = document.getElementById("sessionKey");
-    languageInput = document.getElementById("languageSelect");
-    startSessionBtn = document.getElementById("startSession");
-    joinSessionBtn = document.getElementById("joinSession");
+    startSessionEnglishBtn = document.getElementById("startSessionEnglish");
+    startSessionSpanishBtn = document.getElementById("startSessionSpanish");
+    joinSessionEnglishBtn = document.getElementById("joinSessionEnglish");
+    joinSessionSpanishBtn = document.getElementById("joinSessionSpanish");
     currentCaption = document.getElementById("currentCaption");
     infoText = document.getElementById("infoText");
     langText = document.getElementById("langText");
@@ -84,9 +87,10 @@ function log(text) {
 }
 
 function disableControls(disabled) {
-    languageInput.disabled = disabled;
-    startSessionBtn.disabled = disabled;
-    joinSessionBtn.disabled = disabled;
+    startSessionEnglishBtn.disabled = disabled;
+    startSessionSpanishBtn.disabled = disabled;
+    joinSessionEnglishBtn.disabled = disabled;
+    joinSessionSpanishBtn.disabled = disabled;
 }
 
 // Generates a random session key of the specified length (default 16
@@ -104,7 +108,7 @@ function getRandomSessionKey(length = 16) {
     return `${
         window.location.origin.replace(/^https?:\/\//, "") +
         window.location.pathname
-    }?key=${result}`;
+    }?meetingId=${result}`;
 }
 
 function isValidSessionKey(key) {
@@ -145,9 +149,9 @@ function transitionVideo(toWrapper) {
 
 function setVisibility(icon, visible) {
     if (visible) {
-        document.getElementById(icon).style.display = "inline-block";
+        document.getElementById(icon).classList.remove("d-none");
     } else {
-        document.getElementById(icon).style.display = "none";
+        document.getElementById(icon).classList.add("d-none");
     }
 }
 
@@ -167,10 +171,10 @@ function connect() {
 
         signalingServer.onopen = () => {
             disableControls(false);
-            if (params.has("key") && isValidSessionKey(params.get("key"))) {
-                log("Choose your language, then join the meeting.");
+            if (params.has("meetingId") && isValidSessionKey(params.get("meetingId"))) {
+                log("Choose your language to join the meeting.");
             } else {
-                log("Choose your language, then start a new meeting.");
+                log("Choose your language to create a new meeting.");
             }
         };
 
@@ -319,7 +323,7 @@ function loadTranslator(modelName) {
 
 async function loadModels(moonshineModelName, translatorModelName) {
     const endText = translatorModelName
-        ? ` and ${remoteLanguage} to ${languageInput.value} translator...`
+        ? ` and ${remoteLanguage} to ${localLanguage} translator...`
         : "...";
     log("Loading transcriber model" + endText);
     setVisibility("waitingIcon", false);
@@ -342,16 +346,20 @@ function startCall() {
 
     transcriber.attachStream(remoteStream);
     transcriber.start();
-
-    langText.textContent = remoteLanguage + " → " + languageInput.value;
 }
 
 function getSessionKey() {
-    return new URLSearchParams(sessionKeyInput.value.split("?")[1]).get("key");
+    return new URLSearchParams(sessionKeyInput.value.split("?")[1]).get("meetingId");
 }
 
-async function joinMeeting() {
-    if (isValidSessionKey(getSessionKey())) {
+async function joinMeeting(language) {
+    localLanguage = language;
+    var key = getSessionKey();
+    if (isValidSessionKey(key)) {
+        // update the url with the new meeting id for easy sharing.
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('meetingId', key);
+        window.history.replaceState({}, '', currentUrl.toString());
         if (peerConnection.signalingState === "stable") {
             log("Meeting created. Waiting for someone to join.");
             setVisibility("waitingIcon", true);
@@ -363,7 +371,7 @@ async function joinMeeting() {
                 JSON.stringify({
                     type: "offer",
                     key: getSessionKey(),
-                    lang: languageInput.value,
+                    lang: language,
                     offer,
                 })
             );
@@ -380,13 +388,13 @@ function init() {
 
     peerConnection.ontrack = ({ streams }) => {
         if (!isConnecting) {
-            console.log(remoteLanguage + " to " + languageInput.value);
+            console.log(remoteLanguage + " to " + localLanguage);
             isConnecting = true;
 
             const translatorModelName =
-                remoteLanguage === languageInput.value
+                remoteLanguage === localLanguage
                     ? undefined
-                    : `Xenova/opus-mt-${remoteLanguage}-${languageInput.value}`;
+                    : `Xenova/opus-mt-${remoteLanguage}-${localLanguage}`;
 
             // The Spanish speech to text Moonshine model is available under a community
             // license for researchers, developers, small businesses, and creators with
@@ -443,7 +451,7 @@ function init() {
                 JSON.stringify({
                     type: "answer",
                     key: msg.key,
-                    lang: languageInput.value,
+                    lang: localLanguage,
                     answer,
                 })
             );
@@ -479,8 +487,10 @@ function init() {
         }
     };
 
-    startSessionBtn.onclick = joinMeeting;
-    joinSessionBtn.onclick = joinMeeting;
+    startSessionEnglishBtn.onclick = function() { joinMeeting("en") };
+    startSessionSpanishBtn.onclick = function() { joinMeeting("es") };
+    joinSessionEnglishBtn.onclick = function() { joinMeeting("en") };
+    joinSessionSpanishBtn.onclick = function() { joinMeeting("es") };
 }
 
 //
@@ -488,16 +498,23 @@ function init() {
 //
 document.addEventListener("DOMContentLoaded", () => {
     // check if url includes session key
-    if (params.has("key") && isValidSessionKey(params.get("key"))) {
+    if (params.has("meetingId") && isValidSessionKey(params.get("meetingId"))) {
         sessionKeyInput.value = `${
             window.location.origin.replace(/^https?:\/\//, "") +
             window.location.pathname
-        }?key=${params.get("key")}`;
-        setVisibility("joinSession", true);
-        setVisibility("startSession", false);
-        setVisibility("copySession", true)
+        }?meetingId=${params.get("meetingId")}`;
+        setVisibility("joinSessionEnglish", true);
+        setVisibility("joinSessionSpanish", true);
+        setVisibility("startSessionEnglish", false);
+        setVisibility("startSessionSpanish", false);
+        setVisibility("copySession", false)
     } else {
         sessionKeyInput.value = getRandomSessionKey();
+        setVisibility("joinSessionEnglish", false);
+        setVisibility("joinSessionSpanish", false);
+        setVisibility("startSessionEnglish", true);
+        setVisibility("startSessionSpanish", true);
+        setVisibility("copySession", false)
     }
 
     init();
