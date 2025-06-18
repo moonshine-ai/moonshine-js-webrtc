@@ -18,24 +18,26 @@
     </head>
     <body>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-            <a class="navbar-brand" href="https://moonshine.ai/"><img src="logo.svg" /> Moonshine AI</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-              <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-              <ul class="navbar-nav mr-auto">
-                <li class="nav-item">
-                  <a class="nav-link" href="https://moonshine.ai/#products">Products</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="https://dev.moonshine.ai/">Developers</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#aboutModal">About this demo</a>
-                </li>
-              </ul>
-           </nav>
+            <div class="container-fluid">
+                <a class="navbar-brand" href="https://moonshine.ai/"><img src="logo.svg" />Moonshine AI</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav mr-auto">
+                        <li class="nav-item">
+                        <a class="nav-link" href="https://moonshine.ai/#products">Products</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="https://dev.moonshine.ai/">Developers</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#aboutModal">About this demo</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
         <div class="video-container">
             <video id="remoteVideo" autoplay playsinline></video>
             <div class="modal" tabindex="-1" id="keyModal">
@@ -76,8 +78,8 @@
                             <button
                                 data-bs-dismiss="modal"
                                 type="button"
-                                class="btn"
-                                onclick="location.reload()"
+                                class="btn btn-secondary"
+                                onclick="cancelMeeting()"
                             >
                                 Cancel
                             </button>
@@ -93,7 +95,7 @@
                     </div>
                 </div>
             </div>
-            <div class="modal" tabindex="-1" id="aboutModal">
+            <div class="modal modal-lg" tabindex="-1" id="aboutModal">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -175,11 +177,11 @@
                     <div class="col-lg-6 controls-container">
                         <div>
                             <h1 class="display-4 splash-text">
-                                Video meetings with private captions and translation
+                                Video calls with private captions and translation
                             </h1>
                             <p class="lead">
-                                This <a href="https://github.com/moonshineai/moonshine-js-webrtc">
-                                open source demo</a> uses <a href="https://dev.moonshine.ai/#js">
+                                This <a class="text-white" href="https://github.com/moonshine-ai/moonshine-js-webrtc">
+                                open source demo</a> uses <a class="text-white" href="https://dev.moonshine.ai/#js">
                                 MoonshineJS</a> to transcribe and translate video calls between 
                                 English and Spanish in real-time. All audio processing happens 
                                 locally on your device.
@@ -272,6 +274,10 @@
                     input.classList.add("copied");
                     setTimeout(() => input.classList.remove("copied"), 800);
                 });
+            }
+            function cancelMeeting() {
+                window.location.href =
+                    window.location.origin + window.location.pathname;
             }
         </script>
         <script
