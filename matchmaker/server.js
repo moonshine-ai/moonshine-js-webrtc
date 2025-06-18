@@ -45,7 +45,7 @@
  * used to broadcast any kind of data between clients that share a key.
  *
  * There should be an instance of this server running at
- * wss://matchmaker.moonshine.ai/ that you're welcome to use for testing, but we
+ * wss://mm.moonshine.ai:423/ that you're welcome to use for testing, but we
  * recommend running your own instance for production use, since we make no
  * guarantees about supporting external apps using this server.
  *
@@ -87,13 +87,18 @@ if (process.env.SSL_CERT && process.env.SSL_KEY) {
 
 const wss = new WebSocket.Server({ server });
 
-// Using Twilio for NAT traversal (STUN/TURN) provides more reliability
-const twilio = require("twilio");
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    // Using Twilio for NAT traversal (STUN/TURN) provides more reliability
+    const twilio = require("twilio");
 
-const twilioClient = twilio(
-    process.env.TWILIO_ACCOUNT_SID,
-    process.env.TWILIO_AUTH_TOKEN
-);
+    twilioClient = twilio(
+        process.env.TWILIO_ACCOUNT_SID,
+        process.env.TWILIO_AUTH_TOKEN
+    );
+} else {
+    console.log("No Twilio credentials provided, this needs to be implemented.");
+    process.exit(1);
+}
 
 // Most VPS hosting services will set the PORT environment variable to the
 // port they want you to run your app on, so we use that if it's set, otherwise

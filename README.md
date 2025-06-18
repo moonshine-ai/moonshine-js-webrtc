@@ -57,7 +57,7 @@ Instead the
 [matchmaker/server.js](https://github.com/moonshine-ai/moonshine-js-webrtc/matchmaker/server.js)
 needs to be running somewhere. By default the
 [client/client.js](https://github.com/moonshine-ai/moonshine-js-webrtc/client/client.js)
-script uses the server run by Moonshine AI at `wss://matchmaker.moonshine.ai/`
+script uses the server run by Moonshine AI at `wss://mm.moonshine.ai:423/`
 which is fine for testing or prototyping purposes, but you'll want to host your
 own in a production environment, since we can't offer availability guarantees
 for ours.

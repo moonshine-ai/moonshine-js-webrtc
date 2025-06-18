@@ -9,7 +9,7 @@
  * audio stream in real-time and optionally translate it into another language
  * using a Hugging Face translation model.
  *
- * The client connects to a signaling server at wss://matchmaker.moonshine.ai/
+ * The client connects to a signaling server at wss://mm.moonshine.ai:423/
  * to exchange session keys and WebRTC offers/answers with another client.
  */
 
@@ -43,13 +43,13 @@ let attempts = 0;
 
 // The URL of the matchmaking server that allows clients to send messages to all
 // other clients that share a session key. You're welcome to use this server at
-// wss://matchmaker.moonshine.ai/ for testing or prototyping, but for production
+// wss://mm.moonshine.ai:423/ for testing or prototyping, but for production
 // use you should run your own instance of this server, since we make no
 // guarantees about supporting external apps using this server. There are full
 // instructions on how to run your own instance in the matchmaker/server.js
 // file, and you can find that source code at
 // https://github.com/moonshineai/moonshine-js-webrtc/tree/main/matchmaker/.
-const socketUrl = "wss://matchmaker.moonshine.ai/";
+const socketUrl = "wss://mm.moonshine.ai:423/";
 
 const peerConnection = new RTCPeerConnection();
 let remoteLanguage = undefined;
