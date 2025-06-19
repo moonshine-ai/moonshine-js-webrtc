@@ -141,6 +141,15 @@ async function getTwilioIceServers() {
     return token.iceServers.concat(publicSTUNServers);
 }
 
+function isValidSessionKey(key) {
+    return (
+        key.length > 0 &&
+        key.length <= 16 &&
+        !/\s/.test(key) &&
+        !/[!-/:-@[-`{-~]/.test(key)
+    );
+}
+
 // The entry point for WebSocket connections. Clients will connect to this
 // endpoint and send messages to join a session or exchange data.
 wss.on('connection', (ws) => {
@@ -181,8 +190,11 @@ wss.on('connection', (ws) => {
         if (!key) {
             log(ws.clientId, ': Message does not contain a key:', data);
             return;
+        } else if (!isValidSessionKey(key)) {
+            log(ws.clientId, `: Invalid session key: ${key}`);
+            return;
         }
-      
+
         // If this unique key does not exist in the sessions map, this must be the
         // first client to connect for this session, so we create a new Set that
         // holds this clients WebSocket connection information. If other clients
