@@ -117,3 +117,6 @@ html {
 #joinSession, #copySession {
     display: none;
 }
+#navbarSupportedContent {
+    flex-grow: 0;
+}
