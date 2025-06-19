@@ -110,3 +110,6 @@ TransformersJS](https://huggingface.co/docs/transformers.js/en/index) for the
 library that allows us to run the translation component of this demo, and the
 [Helsinki NLP group](https://huggingface.co/Helsinki-NLP) for their Spanish to
 English and English to Spanish test-to-text translation models.
+
+Thanks for checking this out, please [contact us](mailto:contact@moonshine.ai)
+with any questions.

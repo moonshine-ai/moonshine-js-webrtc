@@ -19,10 +19,20 @@
     <body>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container-fluid">
-                <a class="navbar-brand"
-                    ><img src="logo.svg" /> MoonshineJS + WebRTC</a
-                >
-                <div class="d-flex" id="langText"></div>
+                <a class="navbar-brand" href="https://moonshine.ai/"><img src="logo.svg" />Moonshine AI</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav mr-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="https://dev.moonshine.ai/">Developer Documentation</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#aboutModal">About</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </nav>
         <div class="video-container">
@@ -31,7 +41,7 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">Share your meeting link</h5>
+                            <h5 class="modal-title">Meeting Created</h5>
                         </div>
                         <div class="modal-body">
                             <p>
@@ -65,10 +75,84 @@
                             <button
                                 data-bs-dismiss="modal"
                                 type="button"
-                                class="btn btn-primary"
+                                class="btn btn-secondary"
+                                onclick="cancelMeeting()"
                             >
-                                Ok, got it.
+                                Cancel
                             </button>
+                            <button
+                                data-bs-dismiss="modal"
+                                class="btn btn-primary"
+                                type="button"
+                                onclick="copySessionKey()"
+                            >
+                                Copy Link
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal modal-lg" tabindex="-1" id="aboutModal">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">About this Demo</h5>
+                        </div>
+                        <div class="modal-body">
+                            <p>
+                                This is a demo of <a href="https://dev.moonshine.ai/#js">
+                                MoonshineJS</a>, a library for transcribing audio and 
+                                video sources in the browser, in real time.
+                            </p>
+                            <p>
+                                The code is for this example is open source and available on 
+                                GitHub at 
+                                 <a href="https://github.com/moonshine-ai/moonshine-js-webrtc">
+                                github.com/moonshine-ai/moonshine-js-webrtc</a>.
+                            </p>
+                            <p>
+                                All audio processing happens locally on-device, which means:
+                                <ul>
+                                    <li>
+                                        <b>No Signup, No Fees.</b> 
+                                        No account signup, credit card, or access token needed to get started. No API usage fees.
+                                    </li>
+                                    <li>
+                                        <b>Always Available.</b> 
+                                        The service will never vanish; you have everything you need locally, forever.
+                                    </li>
+                                    <li>
+                                        <b>Meaningful Privacy.</b> 
+                                        You can offer your users real privacy guarantees.
+                                    </li>
+                                    <li>
+                                        <b>Easy Deployment.</b> 
+                                        It can be run as a static site, just by copying files.
+                                    </li>
+                                </ul>
+                            </p>
+
+                            <p>
+                                We're grateful to the team behind 
+                                <a href="https://huggingface.co/docs/transformers.js/en/index">
+                                HuggingFace TransformersJS</a> for the library that allows us to run the
+                                translation component of this demo, and the
+                                <a href="https://huggingface.co/Helsinki-NLP">Helsinki NLP group</a> for 
+                                their Spanish to English and English to Spanish test-to-text translation 
+                                models.
+                            </p>
+
+                            <p>
+                                Thanks for checking this out, please <a href="mailto:contact@moonshine.ai">
+                                contact us</a> with any questions.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button
+                                data-bs-dismiss="modal"
+                                type="button"
+                                class="btn btn-primary"
+                            >OK</button>
                         </div>
                     </div>
                 </div>
@@ -78,13 +162,14 @@
                     <div class="col-lg-6 controls-container">
                         <div>
                             <h1 class="display-4 splash-text">
-                                Private captioning and translation for video
-                                calls.
+                                Video calls with private captions and translation
                             </h1>
                             <p class="lead">
-                                This demo uses MoonshineJS to transcribe and
-                                translate video calls in real-time. All audio
-                                processing happens locally on your device.
+                                This <a class="text-white" href="https://github.com/moonshine-ai/moonshine-js-webrtc">
+                                open source demo</a> uses <a class="text-white" href="https://dev.moonshine.ai/#js">
+                                MoonshineJS</a> to transcribe and translate video calls between 
+                                English and Spanish in real-time. All audio processing happens 
+                                locally on your device.
                             </p>
                         </div>
                         <div class="row g-2">
@@ -101,35 +186,42 @@
                                         role="status"
                                     ></div>
                                     <p id="infoText">
-                                        Choose your language, then begin a call
-                                        by entering a shared meeting key.
+                                        &nbsp; <!-- empty space to keep the button layout from changing before content is loaded -->
                                     </p>
                                 </div>
                             </div>
                             <div class="col">
-                                <select class="form-select" id="languageSelect">
-                                    <option value="en" selected>English</option>
-                                    <option value="es">
-                                        Spanish (Espa&#241;ol)
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col">
                                 <button
-                                    id="startSession"
+                                    id="startSessionEnglish"
                                     class="btn btn-primary"
                                     data-bs-toggle="modal"
                                     data-bs-target="#keyModal"
                                 >
                                     <i class="bi bi-camera-video"></i>
-                                    New Meeting
+                                    English
                                 </button>
                                 <button
-                                    id="joinSession"
+                                    id="startSessionSpanish"
                                     class="btn btn-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#keyModal"
                                 >
                                     <i class="bi bi-camera-video"></i>
-                                    Join Meeting
+                                    Espa&#241;ol
+                                </button>
+                                <button
+                                    id="joinSessionEnglish"
+                                    class="btn btn-primary d-none"
+                                >
+                                    <i class="bi bi-camera-video"></i>
+                                    English
+                                </button>
+                                <button
+                                    id="joinSessionSpanish"
+                                    class="btn btn-primary d-none"
+                                >
+                                    <i class="bi bi-camera-video"></i>
+                                    Espa&#241;ol
                                 </button>
                                 <button
                                     id="copySession"
@@ -167,6 +259,10 @@
                     input.classList.add("copied");
                     setTimeout(() => input.classList.remove("copied"), 800);
                 });
+            }
+            function cancelMeeting() {
+                window.location.href =
+                    window.location.origin + window.location.pathname;
             }
         </script>
         <script
