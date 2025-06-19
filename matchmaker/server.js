@@ -118,6 +118,19 @@ const sessions = new Map();
 // A counter for assigning unique IDs to clients.
 var clientId = 0;
 
+const publicSTUNServers = [
+    { urls: "stun:stun.l.google.com:19302" },
+    // { urls: "stun:stun.l.google.com:5349" },
+    // { urls: "stun:stun1.l.google.com:3478" },
+    // { urls: "stun:stun1.l.google.com:5349" },
+    // { urls: "stun:stun2.l.google.com:19302" },
+    // { urls: "stun:stun2.l.google.com:5349" },
+    // { urls: "stun:stun3.l.google.com:3478" },
+    // { urls: "stun:stun3.l.google.com:5349" },
+    // { urls: "stun:stun4.l.google.com:19302" },
+    // { urls: "stun:stun4.l.google.com:5349" }
+]
+
 // Send a request to Twilio to get ICE servers for NAT traversal.
 // This helps improve the reliability of the WebRTC connection by providing
 // a fallback if the direct connection fails. You'll need to set the
@@ -125,21 +138,8 @@ var clientId = 0;
 // or just leave it blank to use non-commercial servers.
 async function getTwilioIceServers() {
     const token = await twilioClient.tokens.create();
-    return token.iceServers;
+    return token.iceServers.concat(publicSTUNServers);
 }
-
-const publicSTUNServers = [
-    { urls: "stun:stun.l.google.com:19302" },
-    // { urls: "stun:stun.l.google.com:5349" },
-    { urls: "stun:stun1.l.google.com:3478" },
-    // { urls: "stun:stun1.l.google.com:5349" },
-    { urls: "stun:stun2.l.google.com:19302" },
-    // { urls: "stun:stun2.l.google.com:5349" },
-    { urls: "stun:stun3.l.google.com:3478" },
-    // { urls: "stun:stun3.l.google.com:5349" },
-    { urls: "stun:stun4.l.google.com:19302" },
-    // { urls: "stun:stun4.l.google.com:5349" }
-]
 
 // The entry point for WebSocket connections. Clients will connect to this
 // endpoint and send messages to join a session or exchange data.
@@ -156,7 +156,7 @@ wss.on('connection', (ws) => {
             JSON.stringify({
                 clientId: ws.clientId,
                 type: "iceServers",
-                iceServers: iceServers.concat(publicSTUNServers),
+                iceServers: iceServers,
             })
         );
     });
