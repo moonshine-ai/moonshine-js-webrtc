@@ -24,6 +24,7 @@ import { pipeline } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers
 // Page elements.
 //
 let localVideo,
+    localVideoWrapper,
     remoteVideo,
     sessionKeyInput,
     startSessionEnglishBtn,
@@ -31,8 +32,7 @@ let localVideo,
     joinSessionEnglishBtn,
     joinSessionSpanishBtn,
     currentCaption,
-    infoText,
-    langText;
+    infoText
 
 //
 // WebRTC connection and signaling server WebSocket settings.
@@ -62,6 +62,7 @@ let isConnecting;
 //
 document.addEventListener("DOMContentLoaded", () => {
     localVideo = document.getElementById("localVideo");
+    localVideoWrapper = document.getElementById("localVideoWrapper");
     remoteVideo = document.getElementById("remoteVideo");
     sessionKeyInput = document.getElementById("sessionKey");
     startSessionEnglishBtn = document.getElementById("startSessionEnglish");
@@ -70,7 +71,6 @@ document.addEventListener("DOMContentLoaded", () => {
     joinSessionSpanishBtn = document.getElementById("joinSessionSpanish");
     currentCaption = document.getElementById("currentCaption");
     infoText = document.getElementById("infoText");
-    langText = document.getElementById("langText");
 });
 
 //
@@ -105,10 +105,9 @@ function getRandomSessionKey(length = 16) {
         const randomIndex = Math.floor(Math.random() * chars.length);
         result += chars[randomIndex];
     }
-    return `${
-        window.location.origin.replace(/^https?:\/\//, "") +
+    return `${window.location.origin.replace(/^https?:\/\//, "") +
         window.location.pathname
-    }?meetingId=${result}`;
+        }?meetingId=${result}`;
 }
 
 function isValidSessionKey(key) {
@@ -502,10 +501,53 @@ function init() {
         }
     };
 
-    startSessionEnglishBtn.onclick = function() { askThenJoinMeeting("en") };
-    startSessionSpanishBtn.onclick = function() { askThenJoinMeeting("es") };
-    joinSessionEnglishBtn.onclick = function() { askThenJoinMeeting("en") };
-    joinSessionSpanishBtn.onclick = function() { askThenJoinMeeting("es") };
+    startSessionEnglishBtn.onclick = function () { askThenJoinMeeting("en") };
+    startSessionSpanishBtn.onclick = function () { askThenJoinMeeting("es") };
+    joinSessionEnglishBtn.onclick = function () { askThenJoinMeeting("en") };
+    joinSessionSpanishBtn.onclick = function () { askThenJoinMeeting("es") };
+
+    //
+    // draggable local video during calls
+    //
+    let offsetX = 0, offsetY = 0, isDragging = false;
+
+    function startDrag(x, y) {
+        isDragging = true;
+        offsetX = x - localVideoWrapper.offsetLeft;
+        offsetY = y - localVideoWrapper.offsetTop;
+        localVideoWrapper.style.cursor = 'grabbing';
+    }
+
+    function dragMove(x, y) {
+        if (!isDragging) return;
+        localVideoWrapper.style.left = `${x - offsetX}px`;
+        localVideoWrapper.style.top = `${y - offsetY}px`;
+    }
+
+    function endDrag() {
+        isDragging = false;
+        localVideoWrapper.style.cursor = 'grab';
+    }
+
+    // Mouse Events
+    localVideoWrapper.addEventListener('mousedown', e => startDrag(e.clientX, e.clientY));
+    document.addEventListener('mousemove', e => dragMove(e.clientX, e.clientY));
+    document.addEventListener('mouseup', endDrag);
+
+    // Touch Events
+    localVideoWrapper.addEventListener('touchstart', e => {
+        const touch = e.touches[0];
+        startDrag(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    document.addEventListener('touchmove', e => {
+        if (!isDragging) return;
+        const touch = e.touches[0];
+        dragMove(touch.clientX, touch.clientY);
+        e.preventDefault(); // Prevent scrolling
+    }, { passive: false });
+
+    document.addEventListener('touchend', endDrag);
 }
 
 //
@@ -514,10 +556,9 @@ function init() {
 document.addEventListener("DOMContentLoaded", () => {
     // check if url includes session key
     if (params.has("meetingId") && isValidSessionKey(params.get("meetingId"))) {
-        sessionKeyInput.value = `${
-            window.location.origin.replace(/^https?:\/\//, "") +
+        sessionKeyInput.value = `${window.location.origin.replace(/^https?:\/\//, "") +
             window.location.pathname
-        }?meetingId=${params.get("meetingId")}`;
+            }?meetingId=${params.get("meetingId")}`;
         setVisibility("joinSessionEnglish", true);
         setVisibility("joinSessionSpanish", true);
         setVisibility("startSessionEnglish", false);
