@@ -445,14 +445,15 @@ function init() {
 
     signalingServer.onmessage = async (event) => {
         const msg = JSON.parse(event.data);
-        if (msg.key !== getSessionKey()) return;
-
         if (msg.type === "iceServers") {
             console.log("Received ICE servers for NAT traversal.");
             peerConnection.setConfiguration({
                 iceServers: msg.iceServers,
             });
-        } else if (msg.type === "offer") {
+        }
+        if (msg.key !== getSessionKey()) return;
+
+        if (msg.type === "offer") {
             // log("Offer received.");
             remoteLanguage = msg.lang;
             await peerConnection.setRemoteDescription(

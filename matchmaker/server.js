@@ -128,6 +128,19 @@ async function getTwilioIceServers() {
     return token.iceServers;
 }
 
+const publicSTUNServers = [
+    { urls: "stun:stun.l.google.com:19302" },
+    // { urls: "stun:stun.l.google.com:5349" },
+    { urls: "stun:stun1.l.google.com:3478" },
+    // { urls: "stun:stun1.l.google.com:5349" },
+    { urls: "stun:stun2.l.google.com:19302" },
+    // { urls: "stun:stun2.l.google.com:5349" },
+    { urls: "stun:stun3.l.google.com:3478" },
+    // { urls: "stun:stun3.l.google.com:5349" },
+    { urls: "stun:stun4.l.google.com:19302" },
+    // { urls: "stun:stun4.l.google.com:5349" }
+]
+
 // The entry point for WebSocket connections. Clients will connect to this
 // endpoint and send messages to join a session or exchange data.
 wss.on('connection', (ws) => {
@@ -135,7 +148,19 @@ wss.on('connection', (ws) => {
     ws.clientId = clientId;
     clientId++;
     log(ws.clientId, ': WebSocket connection accepted');
-  
+
+    // Send ICE servers to use for NAT traversal
+    getTwilioIceServers().then((iceServers) => {
+        log(ws.clientId, `: Sending ICE servers to client ${ws.clientId}`);
+        ws.send(
+            JSON.stringify({
+                clientId: ws.clientId,
+                type: "iceServers",
+                iceServers: iceServers.concat(publicSTUNServers),
+            })
+        );
+    });
+
     // Called when a new message is received from a client.
     ws.on("message", (message) => {
         let data;
@@ -171,21 +196,6 @@ wss.on('connection', (ws) => {
         }
         sessions.get(key).add(ws);
         log(ws.clientId, `: Session for key ${key} has ${sessions.get(key).size} clients`);
-
-        // Send ICE servers to use for NAT traversal
-        if (data.type === "offer") {
-            getTwilioIceServers().then((iceServers) => {
-                log(ws.clientId, `: Sending ICE servers to client ${ws.clientId} in session ${key}`);
-                ws.send(
-                    JSON.stringify({
-                        key: key,
-                        clientId: ws.clientId,
-                        type: "iceServers",
-                        iceServers: iceServers,
-                    })
-                );
-            });
-        }
 
         // Iterate over all other clients that have registered their connections
         // with the same key identifier and rebroadcast the message to them.
