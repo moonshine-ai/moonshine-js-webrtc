@@ -1,7 +1,7 @@
 /* Moonshine Matchmaker Server
  *
  * (C) 2025 Moonshine AI, "Evan King" <evan@moonshine.ai> and "Pete Warden"
- * <pete@moonshine.ai>. Released under the Apache License, Version 2.0
+ * <pete@moonshine.ai>. Released under the MIT license.
  *
  * This server handles WebSocket connections for matchmaking webrtc clients. It
  * allows clients to connect, find peers, and exchange messages based on a
