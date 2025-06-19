@@ -352,6 +352,20 @@ function getSessionKey() {
     return new URLSearchParams(sessionKeyInput.value.split("?")[1]).get("meetingId");
 }
 
+async function askThenJoinMeeting(language) {
+    navigator.mediaDevices
+        .getUserMedia({ video: true, audio: true })
+        .then((stream) => {
+            stream
+                .getTracks()
+                .forEach((track) => peerConnection.addTrack(track, stream));
+            localVideo.srcObject = stream;
+            localVideo.classList.remove("d-none");
+            joinMeeting(language);
+        });
+
+}
+
 async function joinMeeting(language) {
     localLanguage = language;
     var key = getSessionKey();
@@ -487,10 +501,10 @@ function init() {
         }
     };
 
-    startSessionEnglishBtn.onclick = function() { joinMeeting("en") };
-    startSessionSpanishBtn.onclick = function() { joinMeeting("es") };
-    joinSessionEnglishBtn.onclick = function() { joinMeeting("en") };
-    joinSessionSpanishBtn.onclick = function() { joinMeeting("es") };
+    startSessionEnglishBtn.onclick = function() { askThenJoinMeeting("en") };
+    startSessionSpanishBtn.onclick = function() { askThenJoinMeeting("es") };
+    joinSessionEnglishBtn.onclick = function() { askThenJoinMeeting("en") };
+    joinSessionSpanishBtn.onclick = function() { askThenJoinMeeting("es") };
 }
 
 //
@@ -518,15 +532,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     init();
-
-    navigator.mediaDevices
-        .getUserMedia({ video: true, audio: true })
-        .then((stream) => {
-            stream
-                .getTracks()
-                .forEach((track) => peerConnection.addTrack(track, stream));
-            localVideo.srcObject = stream;
-        });
 
     isConnecting = false;
 });
