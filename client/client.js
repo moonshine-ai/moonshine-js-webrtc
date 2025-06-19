@@ -337,6 +337,7 @@ function startCall() {
     log("Starting call.");
     setVisibility("waitingIcon", false);
     setVisibility("loadingIcon", false);
+    setVisibility("localVideoWrapper", true);
     transitionVideo(document.getElementById("localVideoWrapper"));
 
     remoteVideo.style.visibility = "visible";
@@ -347,11 +348,19 @@ function startCall() {
     transcriber.start();
 }
 
+function endCall() {
+    window.location.href =
+        window.location.origin + window.location.pathname;
+}
+
 function getSessionKey() {
     return new URLSearchParams(sessionKeyInput.value.split("?")[1]).get("meetingId");
 }
 
 async function askThenJoinMeeting(language) {
+    log("Awaiting microphone and webcam permissions.");
+    setVisibility("waitingIcon", true);
+    setVisibility("loadingIcon", false);
     navigator.mediaDevices
         .getUserMedia({ video: true, audio: true })
         .then((stream) => {
@@ -361,6 +370,11 @@ async function askThenJoinMeeting(language) {
             localVideo.srcObject = stream;
             localVideo.classList.remove("d-none");
             joinMeeting(language);
+        })
+        .catch(() => {
+            log("Permissions were denied. Please allow mic and camera access to start or join a call.");
+            setVisibility("waitingIcon", false);
+            setVisibility("loadingIcon", false);
         });
 
 }
@@ -496,8 +510,7 @@ function init() {
             }
         } else if (msg.type === "quit") {
             alert("Peer has left the call. Ending meeting.");
-            window.location.href =
-                window.location.origin + window.location.pathname;
+            endCall();
         }
     };
 
@@ -554,6 +567,7 @@ function init() {
 // ui and signaling flow
 //
 document.addEventListener("DOMContentLoaded", () => {
+    setVisibility("localVideoWrapper", false);
     // check if url includes session key
     if (params.has("meetingId") && isValidSessionKey(params.get("meetingId"))) {
         sessionKeyInput.value = `${window.location.origin.replace(/^https?:\/\//, "") +
