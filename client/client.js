@@ -14,7 +14,7 @@
  */
 
 // Pulls in the MoonshineJS library to handle converting audio to text.
-import * as Moonshine from "https://cdn.jsdelivr.net/npm/@usefulsensors/moonshine-js@latest/dist/moonshine.min.js";
+import * as Moonshine from "https://cdn.jsdelivr.net/npm/@usefulsensors/moonshine-js@develop/dist/moonshine.min.js";
 
 // We use the Hugging Face Transformers library to run text to text translation
 // models.
@@ -51,6 +51,7 @@ let attempts = 0;
 // file, and you can find that source code at
 // https://github.com/moonshineai/moonshine-js-webrtc/tree/main/matchmaker/.
 const socketUrl = "wss://mm.moonshine.ai:423/";
+let clientId;
 
 const peerConnection = new RTCPeerConnection();
 let localLanguage = undefined;
@@ -195,6 +196,17 @@ function connect() {
     }
 }
 
+function sendMessage(type, ...payload) {
+    signalingServer.send(
+        JSON.stringify({
+            type: type,
+            key: getSessionKey(),
+            clientId: clientId,
+            ...Object.assign({}, ...payload),
+        })
+    );
+}
+
 //
 // transcriber/translator loading and callbacks
 //
@@ -217,8 +229,10 @@ function getFormattedCaption(text, maxChars, maxLines, commit = true) {
 
 function loadTranscriber(modelName) {
     let modelLoaded;
+    let modelNotLoaded;
     const promise = new Promise((resolve, reject) => {
         modelLoaded = resolve;
+        modelNotLoaded = reject;
     });
 
     // commit more frequently than default
@@ -227,6 +241,11 @@ function loadTranscriber(modelName) {
     transcriber = new Moonshine.Transcriber(
         modelName,
         {
+            onError(error) {
+                if (error === Moonshine.MoonshineError.PlatformUnsupported) {
+                    modelNotLoaded();
+                }
+            },
             onModelLoadStarted() {
                 console.log(`Loading Transcriber Moonshine ${modelName}`);
             },
@@ -301,8 +320,10 @@ function loadTranscriber(modelName) {
 
 function loadTranslator(modelName) {
     let modelLoaded;
+    let modelNotLoaded;
     const promise = new Promise((resolve, reject) => {
         modelLoaded = resolve;
+        modelNotLoaded = reject;
     });
     // load translator for remote language -> local language
     if (modelName) {
@@ -311,6 +332,8 @@ function loadTranslator(modelName) {
             console.log(`Translator ${modelName} loaded.`);
             translator = result;
             modelLoaded();
+        }).catch(() => {
+            modelNotLoaded();
         });
     } else {
         console.log("No translator needed for same languages.");
@@ -394,14 +417,7 @@ async function joinMeeting(language) {
             disableControls(true);
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
-            signalingServer.send(
-                JSON.stringify({
-                    type: "offer",
-                    key: getSessionKey(),
-                    lang: language,
-                    offer,
-                })
-            );
+            sendMessage("offer", {lang: language, offer})
         }
     } else {
         alert(
@@ -433,12 +449,13 @@ function init() {
             loadModels(moonshineModelName, translatorModelName).then(() => {
                 log("Ready to go, waiting for other caller to load...");
                 remoteStream = streams[0];
-                signalingServer.send(
-                    JSON.stringify({
-                        type: "ready",
-                        key: getSessionKey(),
-                    })
-                );
+                sendMessage("ready");
+            }).catch(() => {
+                log("Sorry, this device or web browser is not supported.");
+                setVisibility("waitingIcon", false);
+                setVisibility("loadingIcon", false);
+                setVisibility("localVideo", false);
+                sendMessage("error", {text: "Cannot connect; peer is using an unsupported device or web browser."})
             });
         }
     };
@@ -446,13 +463,7 @@ function init() {
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
             // log("Sending ICE candidate.")
-            signalingServer.send(
-                JSON.stringify({
-                    type: "ice",
-                    key: getSessionKey(),
-                    candidate: event.candidate,
-                })
-            );
+            sendMessage("ice", {candidate: event.candidate})
         }
     };
 
@@ -460,11 +471,13 @@ function init() {
         const msg = JSON.parse(event.data);
         if (msg.type === "iceServers") {
             console.log("Received ICE servers for NAT traversal.");
+            clientId = msg.clientId;
             peerConnection.setConfiguration({
                 iceServers: msg.iceServers,
             });
         }
         if (msg.key !== getSessionKey()) return;
+        if (msg.clientId === clientId) return;
 
         if (msg.type === "offer") {
             // log("Offer received.");
@@ -475,14 +488,7 @@ function init() {
             // log("Sending answer.");
             const answer = await peerConnection.createAnswer();
             await peerConnection.setLocalDescription(answer);
-            signalingServer.send(
-                JSON.stringify({
-                    type: "answer",
-                    key: msg.key,
-                    lang: localLanguage,
-                    answer,
-                })
-            );
+            sendMessage("answer", {lang: localLanguage, answer})
         } else if (msg.type === "answer") {
             // log("Answer received.");
             remoteLanguage = msg.lang;
@@ -510,6 +516,12 @@ function init() {
             }
         } else if (msg.type === "quit") {
             alert("Peer has left the call. Ending meeting.");
+            endCall();
+        } else if (msg.type === "error") {
+            alert(msg.text)
+            setVisibility("waitingIcon", false);
+            setVisibility("loadingIcon", false);
+            setVisibility("localVideo", false);
             endCall();
         }
     };
