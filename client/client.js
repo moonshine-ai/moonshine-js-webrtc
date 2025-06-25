@@ -14,7 +14,7 @@
  */
 
 // Pulls in the MoonshineJS library to handle converting audio to text.
-import * as Moonshine from "https://cdn.jsdelivr.net/npm/@usefulsensors/moonshine-js@develop/dist/moonshine.min.js";
+import * as Moonshine from "https://cdn.jsdelivr.net/npm/@moonshine-ai/moonshine-js@latest/dist/moonshine.min.js";
 
 // We use the Hugging Face Transformers library to run text to text translation
 // models.
@@ -224,7 +224,7 @@ function getFormattedCaption(text, maxChars, maxLines, commit = true) {
         caption = `${caption} ${text}`;
         return caption;
     }
-    return `${caption} <span class="update">${text}</mark>`;
+    return `${caption} <span class="update">${text}</span>`;
 }
 
 function loadTranscriber(modelName) {
