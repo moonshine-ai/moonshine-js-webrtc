@@ -41,7 +41,7 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">Meeting Created</h5>
+                            <h5 class="modal-title">Share with a Friend</h5>
                         </div>
                         <div class="modal-body">
                             <p>
@@ -72,14 +72,24 @@
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button
+                            <a class="meeting-link" href="sms:?body=Join%20me%20on%20this%20meeting%3A%20https%3A%2F%2Fwebrtc.moonshine.ai%2F%3FmeetingId%3DMEETING_ID">
+                                <button
+                                    data-bs-dismiss="modal"
+                                    class="btn btn-primary"
+                                    type="button"
+                                >
+                                    Text Link
+                                </button>
+                            </a>
+                            <a class="meeting-link" href="mailto:someone@example.com?subject=Moonshine%20Meeting%20invite&body=Hi%2C%20I%27d%20like%20to%20invite%20you%20to%20a%20meeting%20with%20me.%20Here%27s%20the%20link%3A%20https%3A//webrtc.moonshine.ai/%3FmeetingId%3DMEETING_ID">
+                                <button
                                 data-bs-dismiss="modal"
+                                class="btn btn-primary"
                                 type="button"
-                                class="btn btn-secondary"
-                                onclick="cancelMeeting()"
                             >
-                                Cancel
-                            </button>
+                                    Email Link
+                                </button>
+                            </a>
                             <button
                                 data-bs-dismiss="modal"
                                 class="btn btn-primary"
@@ -160,7 +170,7 @@
                     <div class="col-lg-6 controls-container">
                         <div>
                             <h1 class="display-4 splash-text">
-                                Video calls with private captions and translation
+                                Private video calls with real-time captions and translation
                             </h1>
                             <p class="lead">
                                 This <a class="text-white" href="https://github.com/moonshine-ai/moonshine-js-webrtc">
@@ -170,8 +180,22 @@
                                 locally on your device.
                             </p>
                         </div>
+                        <ol id="create-instructions">
+                            <li>Choose the language you speak</li>
+                            <li>Send the meeting link to a friend</li>
+                            <li>They pick their language</li>
+                            <li>The meeting starts, with live captions and translation</li>
+                        </ol>
+                        <div id="join-instructions" class="d-none mb-4">
+                            <div>
+                                You've been invited to a meeting.
+                            </div>
+                            <div>
+                                Choose the language you speak to join.
+                            </div>
+                        </div>
                         <div class="row g-2">
-                            <div class="col-12 gy-4">
+                            <div class="col-12 gy-4" id="status-bar">
                                 <div>
                                     <div
                                         id="loadingIcon"
@@ -188,7 +212,7 @@
                                     </p>
                                 </div>
                             </div>
-                            <div class="col">
+                            <div class="col d-none" id="language-buttons">
                                 <button
                                     id="startSessionEnglish"
                                     class="btn btn-primary"

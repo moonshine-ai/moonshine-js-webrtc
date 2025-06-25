@@ -87,11 +87,15 @@ function log(text) {
     infoText.innerHTML = text;
 }
 
-function disableControls(disabled) {
-    startSessionEnglishBtn.disabled = disabled;
-    startSessionSpanishBtn.disabled = disabled;
-    joinSessionEnglishBtn.disabled = disabled;
-    joinSessionSpanishBtn.disabled = disabled;
+function showStatusInsteadOfButtons(showStatus)
+{
+    if (showStatus) {
+        setVisibility("status-bar", true);
+        setVisibility("language-buttons", false);
+    } else {
+        setVisibility("status-bar", false);
+        setVisibility("language-buttons", true);
+    }
 }
 
 // Generates a random session key of the specified length (default 16
@@ -156,7 +160,7 @@ function setVisibility(icon, visible) {
 }
 
 function connect() {
-    disableControls(true);
+    showStatusInsteadOfButtons(true);
 
     if (attempts >= maxRetries) {
         log("Failed to connect after multiple attempts.");
@@ -164,18 +168,13 @@ function connect() {
     }
 
     attempts++;
-    log(`Connecting to matchmaking server (${attempts}/${maxRetries})`);
+    log("Connecting to matchmaking server...");
 
     try {
         signalingServer = new WebSocket(socketUrl);
 
         signalingServer.onopen = () => {
-            disableControls(false);
-            if (params.has("meetingId") && isValidSessionKey(params.get("meetingId"))) {
-                log("Choose your language to join the meeting.");
-            } else {
-                log("Choose your language to create a new meeting.");
-            }
+            showStatusInsteadOfButtons(false);
         };
 
         signalingServer.onerror = (e) => {
@@ -410,11 +409,14 @@ async function joinMeeting(language) {
         const currentUrl = new URL(window.location.href);
         currentUrl.searchParams.set('meetingId', key);
         window.history.replaceState({}, '', currentUrl.toString());
+        Array.from(document.getElementsByClassName("meeting-link")).forEach(link => {
+            link.href = link.href.replace("MEETING_ID", key);
+        });
         if (peerConnection.signalingState === "stable") {
+            showStatusInsteadOfButtons(true);
             log("Meeting created. Waiting for someone to join.");
             setVisibility("waitingIcon", true);
             setVisibility("copySession", true);
-            disableControls(true);
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
             sendMessage("offer", {lang: language, offer})
@@ -427,6 +429,15 @@ async function joinMeeting(language) {
 }
 
 function init() {
+
+    if (params.has("meetingId") && isValidSessionKey(params.get("meetingId"))) {
+        setVisibility("join-instructions", true);
+        setVisibility("create-instructions", false);
+    } else {
+        setVisibility("join-instructions", false);
+        setVisibility("create-instructions", true);
+    }
+
     connect();
 
     peerConnection.ontrack = ({ streams }) => {
@@ -470,7 +481,7 @@ function init() {
     signalingServer.onmessage = async (event) => {
         const msg = JSON.parse(event.data);
         if (msg.type === "iceServers") {
-            console.log("Received ICE servers for NAT traversal.");
+            console.log("Received servers for NAT traversal.");
             clientId = msg.clientId;
             peerConnection.setConfiguration({
                 iceServers: msg.iceServers,
@@ -585,6 +596,8 @@ document.addEventListener("DOMContentLoaded", () => {
         sessionKeyInput.value = `${window.location.origin.replace(/^https?:\/\//, "") +
             window.location.pathname
             }?meetingId=${params.get("meetingId")}`;
+        setVisibility("status-bar", false);
+        setVisibility("language-buttons", true);
         setVisibility("joinSessionEnglish", true);
         setVisibility("joinSessionSpanish", true);
         setVisibility("startSessionEnglish", false);
@@ -592,11 +605,13 @@ document.addEventListener("DOMContentLoaded", () => {
         setVisibility("copySession", false)
     } else {
         sessionKeyInput.value = getRandomSessionKey();
+        setVisibility("status-bar", false);
+        setVisibility("language-buttons", true);
         setVisibility("joinSessionEnglish", false);
         setVisibility("joinSessionSpanish", false);
         setVisibility("startSessionEnglish", true);
         setVisibility("startSessionSpanish", true);
-        setVisibility("copySession", false)
+        setVisibility("copySession", false);
     }
 
     init();
