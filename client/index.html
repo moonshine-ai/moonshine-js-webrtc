@@ -59,26 +59,21 @@
                                         pattern=".*\S+.*"
                                         disabled
                                     />
-                                    <button
-                                        id="sessionKeyCopy"
-                                        class="btn btn-sm btn-primary position-absolute top-50 end-0 translate-middle-y me-2 bg-transparent border-0"
-                                        onclick="copySessionKey()"
-                                    >
-                                        <i
-                                            class="bi bi-clipboard text-dark"
-                                        ></i>
-                                    </button>
                                 </div>
                             </div>
                         </div>
                         <div class="modal-footer">
+                            <div>
+                                <b>Share via:</b>
+                            </div>
                             <a class="meeting-link" href="sms:?body=Join%20me%20on%20this%20meeting%3A%20https%3A%2F%2Fwebrtc.moonshine.ai%2F%3FmeetingId%3DMEETING_ID">
                                 <button
                                     data-bs-dismiss="modal"
                                     class="btn btn-primary"
                                     type="button"
                                 >
-                                    Text Link
+                                    <i class="bi bi-phone"></i>
+                                    Text
                                 </button>
                             </a>
                             <a class="meeting-link" href="mailto:someone@example.com?subject=Moonshine%20Meeting%20invite&body=Hi%2C%20I%27d%20like%20to%20invite%20you%20to%20a%20meeting%20with%20me.%20Here%27s%20the%20link%3A%20https%3A//webrtc.moonshine.ai/%3FmeetingId%3DMEETING_ID">
@@ -87,7 +82,8 @@
                                 class="btn btn-primary"
                                 type="button"
                             >
-                                    Email Link
+                                    <i class="bi bi-envelope"></i>
+                                    Email
                                 </button>
                             </a>
                             <button
@@ -96,7 +92,8 @@
                                 type="button"
                                 onclick="copySessionKey()"
                             >
-                                Copy Link
+                                <i class="bi bi-clipboard"></i>
+                                Copy + Paste
                             </button>
                         </div>
                     </div>
@@ -113,9 +110,7 @@
                                 This is a demo of <a href="https://dev.moonshine.ai/#js">
                                 MoonshineJS</a>, a library for transcribing audio and 
                                 video sources in the browser, in real time.
-                            </p>
-                            <p>
-                                The code is for this example is open source and available on 
+                                The demo code is open source and available on 
                                 <a href="https://github.com/moonshine-ai/moonshine-js-webrtc">GitHub</a>.
                             </p>
                             <p>
@@ -170,28 +165,28 @@
                     <div class="col-lg-6 controls-container">
                         <div>
                             <h1 class="display-4 splash-text">
-                                Private video calls with real-time captions and translation
+                                Video calls with subtitles
                             </h1>
                             <p class="lead">
-                                This <a class="text-white" href="https://github.com/moonshine-ai/moonshine-js-webrtc">
-                                open source demo</a> uses <a class="text-white" href="https://dev.moonshine.ai/#js">
-                                MoonshineJS</a> to transcribe and translate video calls between 
-                                English and Spanish in real-time. All audio processing happens 
-                                locally on your device.
+                                See subtitles generated on-the-fly while you talk, even if you speak different languages!
+
+                                Private, <a class="text-white" href="https://github.com/moonshine-ai/moonshine-js-webrtc">
+                                open source</a>, powered by <a class="text-white" href="https://dev.moonshine.ai/#js">
+                                MoonshineJS</a>.
                             </p>
                         </div>
                         <ol id="create-instructions">
-                            <li>Choose the language you speak</li>
+                            <li>Choose your language</li>
                             <li>Send the meeting link to a friend</li>
                             <li>They pick their language</li>
-                            <li>The meeting starts, with live captions and translation</li>
+                            <li>The meeting starts, with live subtitles</li>
                         </ol>
                         <div id="join-instructions" class="d-none mb-4">
                             <div>
                                 You've been invited to a meeting.
                             </div>
                             <div>
-                                Choose the language you speak to join.
+                                Choose your language to join.
                             </div>
                         </div>
                         <div class="row g-2">
@@ -259,11 +254,13 @@
                     <div class="col-lg-4 col-sm-12">
                         <video
                             id="localVideo"
-                            class="d-none"
                             autoplay
                             muted
                             playsinline
-                        ></video>
+                            loop
+                        >
+                            <source src="/assets/example.mp4" type="video/mp4" />
+                        </video>
                     </div>
                 </div>
             </div>
